@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DayFlow | 今日に特化したタスク・予定管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-layer"></div>
+  <div class="bg-sheen"></div>
+  <main class="shell">
+    <header class="hero glass-card">
+      <div>
+        <p class="eyebrow">DayFlow / デイリーファースト</p>
+        <h1>今日を見るだけで、生活が整う。</h1>
+        <p class="subhead">タスクと予定を「今日」を中心に統合。軽量な3レイヤーUIで、明日も来週も迷わない。</p>
+        <div class="cta-row">
+          <button class="primary-btn" id="addQuickTask">
+            <span>＋ 今日のタスクを追加</span>
+            <span class="glow"></span>
+          </button>
+          <button class="ghost-btn" id="addQuickEvent">予定を追加</button>
+        </div>
+      </div>
+      <div class="badge">Cool Glass • v1.0</div>
+    </header>
+
+    <nav class="tab-nav glass-card">
+      <button class="tab active" data-target="todayView">今日</button>
+      <button class="tab" data-target="weekView">週ストリップ</button>
+      <button class="tab" data-target="calendarView">カレンダー</button>
+    </nav>
+
+    <section id="todayView" class="view active">
+      <div class="grid two-col">
+        <article class="glass-card section-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">今日</p>
+              <h2 id="todayLabel"></h2>
+            </div>
+            <div class="pill" id="relativeLabel">相対日付</div>
+          </div>
+          <div class="weather">
+            <div class="weather-icon">☀︎</div>
+            <div>
+              <p class="weather-temp">18℃ / 24℃</p>
+              <p class="weather-note">軽めの外出日和</p>
+            </div>
+          </div>
+
+          <div class="collapsible" data-section="events">
+            <div class="collapsible-head">
+              <h3>今日の予定</h3>
+              <button class="chip toggle-btn" data-toggle="events">折り畳む</button>
+            </div>
+            <ul class="item-list" id="todayEvents"></ul>
+            <div class="section-actions">
+              <button class="ghost-btn" id="addEventToday">＋ 予定を追加</button>
+            </div>
+          </div>
+
+          <div class="collapsible" data-section="tasks">
+            <div class="collapsible-head">
+              <h3>今日のタスク</h3>
+              <div class="collapsible-controls">
+                <button class="chip toggle-btn" data-toggle="tasks">折り畳む</button>
+                <button class="chip ghost small" id="toggleTaskLimit">3件表示</button>
+              </div>
+            </div>
+            <ul class="item-list" id="todayTasks"></ul>
+            <div class="section-actions">
+              <button class="ghost-btn" id="addTaskToday">＋ タスクを追加</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass-card section-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">短期レイヤー</p>
+              <h2>週ストリップ</h2>
+            </div>
+            <div class="week-controls">
+              <button class="icon-btn" id="prevWeek">←</button>
+              <p class="week-range" id="weekRange"></p>
+              <button class="icon-btn" id="nextWeek">→</button>
+            </div>
+          </div>
+
+          <div class="week-strip" id="weekStrip"></div>
+
+          <div class="selected-day glass-card nested">
+            <div class="collapsible-head">
+              <div>
+                <p class="eyebrow">選択日</p>
+                <h3 id="selectedDayLabel"></h3>
+              </div>
+              <button class="chip ghost" id="addItemSelected">＋ 追加</button>
+            </div>
+            <div class="split">
+              <div>
+                <p class="eyebrow">予定</p>
+                <ul class="mini-list" id="selectedDayEvents"></ul>
+              </div>
+              <div>
+                <p class="eyebrow">タスク</p>
+                <ul class="mini-list" id="selectedDayTasks"></ul>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="weekView" class="view">
+      <article class="glass-card section-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">週ビュー</p>
+            <h2>明日・今週・来週を軽く見渡す</h2>
+          </div>
+          <div class="week-controls">
+            <button class="icon-btn" id="prevWeekAlt">←</button>
+            <p class="week-range" id="weekRangeAlt"></p>
+            <button class="icon-btn" id="nextWeekAlt">→</button>
+          </div>
+        </div>
+        <div class="week-strip large" id="weekStripAlt"></div>
+        <div class="info-bar">
+          <div class="chip solid">● 予定あり</div>
+          <div class="chip solid done">■ タスクあり</div>
+          <div class="chip ghost">スワイプ感覚で左右ボタン</div>
+        </div>
+      </article>
+    </section>
+
+    <section id="calendarView" class="view">
+      <article class="glass-card section-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">長期レイヤー</p>
+            <h2>詳細カレンダー</h2>
+          </div>
+          <div class="week-controls">
+            <button class="icon-btn" id="prevMonth">←</button>
+            <p class="week-range" id="monthLabel"></p>
+            <button class="icon-btn" id="nextMonth">→</button>
+          </div>
+        </div>
+        <div class="calendar" id="calendarGrid"></div>
+        <div class="selected-day glass-card nested">
+          <div class="collapsible-head">
+            <div>
+              <p class="eyebrow">選択日</p>
+              <h3 id="selectedCalendarDay"></h3>
+            </div>
+            <button class="chip ghost" id="addItemCalendar">＋ 追加</button>
+          </div>
+          <div class="split">
+            <div>
+              <p class="eyebrow">予定</p>
+              <ul class="mini-list" id="calendarEvents"></ul>
+            </div>
+            <div>
+              <p class="eyebrow">タスク</p>
+              <ul class="mini-list" id="calendarTasks"></ul>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal glass-card">
+      <div class="modal-head">
+        <h3>タスクを追加</h3>
+        <button class="icon-btn" data-close="taskModal">✕</button>
+      </div>
+      <form id="taskForm">
+        <label>タイトル
+          <input type="text" id="taskTitle" required placeholder="レポートの下書き">
+        </label>
+        <label>メモ（任意）
+          <textarea id="taskNote" placeholder="あと図を入れれば終わり"></textarea>
+        </label>
+        <fieldset>
+          <legend>期日（相対）</legend>
+          <div class="chip-row">
+            <label class="chip selectable"><input type="radio" name="taskDue" value="today" checked> 今日</label>
+            <label class="chip selectable"><input type="radio" name="taskDue" value="tomorrow"> 明日</label>
+            <label class="chip selectable"><input type="radio" name="taskDue" value="this_week"> 今週</label>
+            <label class="chip selectable"><input type="radio" name="taskDue" value="next_week"> 来週</label>
+            <label class="chip selectable"><input type="radio" name="taskDue" value="none"> 期限なし</label>
+          </div>
+        </fieldset>
+        <div class="modal-actions">
+          <button type="submit" class="primary-btn full">作成</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="eventModal">
+    <div class="modal glass-card">
+      <div class="modal-head">
+        <h3>予定を追加</h3>
+        <button class="icon-btn" data-close="eventModal">✕</button>
+      </div>
+      <form id="eventForm">
+        <label>タイトル
+          <input type="text" id="eventTitle" required placeholder="客先レビュー">
+        </label>
+        <label>日付
+          <input type="date" id="eventDate" required>
+        </label>
+        <label>時間（任意）
+          <input type="time" id="eventTime">
+        </label>
+        <label>メモ（任意）
+          <textarea id="eventMemo" placeholder="Zoom"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="primary-btn full">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
