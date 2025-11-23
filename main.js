@@ -14,6 +14,8 @@ const state = {
   calendarMonth: new Date(today.getFullYear(), today.getMonth(), 1),
   taskModalTargetDate: null,
   eventModalDate: toISO(today),
+  editingTaskId: null,
+  editingEventId: null,
   showCalendarInline: false
 };
 
@@ -55,24 +57,6 @@ function formatLongDate(date) {
     weekday: 'short'
   }).format(dt);
   return `${base}(${weekday})`;
-}
-
-function relativeBadge(date) {
-  if (!date) return '未設定';
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diff = Math.round((target - now) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return '今日';
-  if (diff === 1) return '明日';
-  const start = startOfWeek(now);
-  const endThisWeek = addDays(start, 6);
-  const startNextWeek = addDays(start, 7);
-  const endNextWeek = addDays(start, 13);
-  if (target >= start && target <= endThisWeek) return '今週';
-  if (target >= startNextWeek && target <= endNextWeek) return '来週';
-  return formatDateLabel(target);
 }
 
 function loadState() {
@@ -161,7 +145,12 @@ function renderEventsList(container, events) {
       </div>
       <button class="chip ghost small" data-id="${ev.id}" data-type="event">削除</button>
     `;
-    li.querySelector('button').addEventListener('click', () => deleteEvent(ev.id));
+    const deleteBtn = li.querySelector('button');
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteEvent(ev.id);
+    });
+    li.addEventListener('click', () => openEventEditModal(ev.id));
     container.appendChild(li);
   });
 }
@@ -182,17 +171,19 @@ function renderTasksList(container, tasks) {
         <p class="title">${task.title}</p>
         <p class="meta">${task.note || ''}</p>
       </div>
-      <div>
-        <p class="status ${task.done ? 'done' : ''}">${task.date ? relativeBadge(task.date) : '期限なし'}</p>
-      </div>
+      <button class="chip ghost small btn-task-delete" aria-label="削除" title="削除">🗑</button>
     `;
     const checkbox = li.querySelector('input');
+    checkbox.addEventListener('click', (e) => e.stopPropagation());
     checkbox.addEventListener('change', (e) => toggleTask(task.id, e.target.checked));
+    const deleteBtn = li.querySelector('.btn-task-delete');
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteTask(task.id);
+    });
     li.addEventListener('click', (e) => {
-      // Avoid double toggling when clicking directly on the checkbox
       if (e.target.tagName.toLowerCase() === 'input') return;
-      checkbox.checked = !checkbox.checked;
-      toggleTask(task.id, checkbox.checked);
+      openTaskEditModal(task.id);
     });
     container.appendChild(li);
   });
@@ -296,32 +287,27 @@ function deleteEvent(id) {
   render();
 }
 
-function convertRelativeToDate(relative) {
-  const base = new Date();
-  switch (relative) {
-    case 'today':
-      return toISO(base);
-    case 'tomorrow':
-      return toISO(addDays(base, 1));
-    case 'this_week':
-      return toISO(addDays(startOfWeek(base), 4));
-    case 'next_week':
-      return toISO(addDays(startOfWeek(base), 7));
-    default:
-      return null;
-  }
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(task => task.id !== id);
+  persistState();
+  render();
 }
 
 function openTaskModal(targetDate = null) {
   state.taskModalTargetDate = targetDate;
   document.getElementById('taskForm').reset();
-  if (targetDate) {
-    const rel = pickRelativeForDate(targetDate);
-    document.querySelectorAll('input[name="taskDue"]').forEach(radio => {
-      radio.checked = radio.value === rel;
-    });
-  }
   document.getElementById('taskModal').classList.add('active');
+}
+
+function openTaskEditModal(taskId) {
+  const target = state.tasks.find(t => t.id === taskId);
+  if (!target) return;
+  state.editingTaskId = taskId;
+  const form = document.getElementById('taskEditForm');
+  form.reset();
+  document.getElementById('taskEditTitle').value = target.title || '';
+  document.getElementById('taskEditNote').value = target.note || '';
+  document.getElementById('taskEditModal').classList.add('active');
 }
 
 function openEventModal(date = toISO(new Date())) {
@@ -331,26 +317,24 @@ function openEventModal(date = toISO(new Date())) {
   document.getElementById('eventModal').classList.add('active');
 }
 
+function openEventEditModal(eventId) {
+  const target = state.events.find(ev => ev.id === eventId);
+  if (!target) return;
+  state.editingEventId = eventId;
+  const form = document.getElementById('eventEditForm');
+  form.reset();
+  document.getElementById('eventEditTitle').value = target.title || '';
+  document.getElementById('eventEditDate').value = target.date || toISO(today);
+  document.getElementById('eventEditTime').value = target.time || '';
+  document.getElementById('eventEditMemo').value = target.memo || '';
+  document.getElementById('eventEditModal').classList.add('active');
+}
+
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
   state.taskModalTargetDate = null;
-}
-
-function pickRelativeForDate(dateIso) {
-  const now = new Date();
-  const target = new Date(dateIso);
-  now.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
-  const diff = Math.round((target - now) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return 'today';
-  if (diff === 1) return 'tomorrow';
-  const start = startOfWeek(now);
-  const endThisWeek = addDays(start, 6);
-  const startNextWeek = addDays(start, 7);
-  const endNextWeek = addDays(start, 13);
-  if (target >= start && target <= endThisWeek) return 'this_week';
-  if (target >= startNextWeek && target <= endNextWeek) return 'next_week';
-  return 'none';
+  state.editingTaskId = null;
+  state.editingEventId = null;
 }
 
 function wireEvents() {
@@ -401,21 +385,39 @@ function wireEvents() {
     const title = document.getElementById('taskTitle').value.trim();
     if (!title) return;
     const note = document.getElementById('taskNote').value.trim();
-    const relative = document.querySelector('input[name="taskDue"]:checked')?.value || 'today';
-    let dueDate = state.taskModalTargetDate;
-    if (!dueDate) {
-      dueDate = relative === 'none' ? null : convertRelativeToDate(relative);
-    }
+    const date = state.taskModalTargetDate || state.selectedDate || toISO(today);
     state.tasks.push({
       id: uid(),
       title,
       note,
-      date: dueDate,
-      due: relative,
+      date,
       done: false
     });
     persistState();
     closeModal('taskModal');
+    render();
+  });
+
+  document.getElementById('taskEditForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!state.editingTaskId) return;
+    const existing = state.tasks.find(task => task.id === state.editingTaskId);
+    if (!existing) {
+      closeModal('taskEditModal');
+      return;
+    }
+    const title = document.getElementById('taskEditTitle').value.trim();
+    if (!title) return;
+    const note = document.getElementById('taskEditNote').value.trim();
+    const date = typeof existing.date !== 'undefined' ? existing.date : (state.selectedDate || toISO(today));
+    state.tasks = state.tasks.map(task => task.id === state.editingTaskId ? {
+      ...task,
+      title,
+      note,
+      date
+    } : task);
+    persistState();
+    closeModal('taskEditModal');
     render();
   });
 
@@ -435,6 +437,31 @@ function wireEvents() {
     });
     persistState();
     closeModal('eventModal');
+    render();
+  });
+
+  document.getElementById('eventEditForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!state.editingEventId) return;
+    const title = document.getElementById('eventEditTitle').value.trim();
+    if (!title) return;
+    const date = document.getElementById('eventEditDate').value || toISO(today);
+    const time = document.getElementById('eventEditTime').value;
+    const memo = document.getElementById('eventEditMemo').value.trim();
+    const exists = state.events.some(ev => ev.id === state.editingEventId);
+    if (!exists) {
+      closeModal('eventEditModal');
+      return;
+    }
+    state.events = state.events.map(ev => ev.id === state.editingEventId ? {
+      ...ev,
+      title,
+      date,
+      time,
+      memo
+    } : ev);
+    persistState();
+    closeModal('eventEditModal');
     render();
   });
 }

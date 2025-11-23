@@ -103,16 +103,6 @@
         <label>メモ（任意）
           <textarea id="taskNote" placeholder="あと図を入れれば終わり"></textarea>
         </label>
-        <fieldset>
-          <legend>期日（相対）</legend>
-          <div class="chip-row">
-            <label class="chip selectable"><input type="radio" name="taskDue" value="today" checked> 今日</label>
-            <label class="chip selectable"><input type="radio" name="taskDue" value="tomorrow"> 明日</label>
-            <label class="chip selectable"><input type="radio" name="taskDue" value="this_week"> 今週</label>
-            <label class="chip selectable"><input type="radio" name="taskDue" value="next_week"> 来週</label>
-            <label class="chip selectable"><input type="radio" name="taskDue" value="none"> 期限なし</label>
-          </div>
-        </fieldset>
         <div class="modal-actions">
           <button type="submit" class="primary-btn full">作成</button>
         </div>
@@ -141,6 +131,52 @@
         </label>
         <div class="modal-actions">
           <button type="submit" class="primary-btn full">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="taskEditModal">
+    <div class="modal glass-card">
+      <div class="modal-head">
+        <h3>タスクを編集</h3>
+        <button class="icon-btn" data-close="taskEditModal">✕</button>
+      </div>
+      <form id="taskEditForm">
+        <label>タイトル
+          <input type="text" id="taskEditTitle" required placeholder="レポートの下書き">
+        </label>
+        <label>メモ（任意）
+          <textarea id="taskEditNote" placeholder="あと図を入れれば終わり"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="primary-btn full">更新</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="eventEditModal">
+    <div class="modal glass-card">
+      <div class="modal-head">
+        <h3>予定を編集</h3>
+        <button class="icon-btn" data-close="eventEditModal">✕</button>
+      </div>
+      <form id="eventEditForm">
+        <label>タイトル
+          <input type="text" id="eventEditTitle" required placeholder="客先レビュー">
+        </label>
+        <label>日付
+          <input type="date" id="eventEditDate" required>
+        </label>
+        <label>時間（任意）
+          <input type="time" id="eventEditTime">
+        </label>
+        <label>メモ（任意）
+          <textarea id="eventEditMemo" placeholder="Zoom"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="primary-btn full">更新</button>
         </div>
       </form>
     </div>
