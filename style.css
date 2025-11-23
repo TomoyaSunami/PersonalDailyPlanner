@@ -495,7 +495,8 @@ body {
 
 .day-chip.today {
   border-color: rgba(14, 165, 233, 0.7);
-  box-shadow: inset 0 0 0 2px rgba(14, 165, 233, 0.35);
+  border-width: 2px;
+  box-shadow: none;
   background: rgba(14, 165, 233, 0.08);
   border-style: solid;
 }
@@ -610,6 +611,7 @@ body {
 
 .calendar-cell.today {
   border-color: rgba(14, 165, 233, 0.7);
+  border-width: 2px;
   box-shadow: none;
 }
 
