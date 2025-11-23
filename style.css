@@ -123,6 +123,7 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 0;
+  font-size: 16px;
 }
 
 .calendar-wrapper + .section-head {
@@ -443,6 +444,12 @@ body {
   position: relative;
 }
 
+.day-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+}
+
 .day-chip .dow {
   font-size: 12px;
   color: var(--text-secondary);
@@ -499,6 +506,12 @@ body {
   box-shadow: none;
   background: rgba(14, 165, 233, 0.08);
   border-style: solid;
+}
+
+.day-chip.today:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .selected-day.nested {
@@ -576,6 +589,15 @@ body {
   transition: all 300ms ease;
 }
 
+.calendar-cell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.calendar-cell:hover:not(.today):not(.active) {
+  background: rgba(255, 255, 255, 0.75);
+}
+
 .calendar-cell .day-number {
   font-weight: 700;
 }
@@ -613,6 +635,25 @@ body {
   border-color: rgba(14, 165, 233, 0.7);
   border-width: 2px;
   box-shadow: none;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.calendar-cell.active:hover {
+  transform: translateY(-1px);
+  background: rgba(99, 102, 241, 0.12); /* keep active bg */
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.calendar-cell.today:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.55) !important; /* keep today bg same as通常 */
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.calendar-cell.active.today:hover {
+  transform: translateY(-1px);
+  background: rgba(99, 102, 241, 0.12); /* keep active bg */
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(99, 102, 241, 0.3);
 }
 
 .modal-backdrop {
@@ -792,6 +833,7 @@ input[type="checkbox"] {
 .inline-week .section-head,
 .inline-calendar .section-head {
   align-items: center;
+  font-size: 16px;
 }
 
 .inline-week .day-chip {
@@ -801,10 +843,26 @@ input[type="checkbox"] {
   box-shadow: none;
 }
 
+.inline-week .day-chip.active {
+  border-style: solid;
+  border-width: 2px;
+}
+
+.inline-week .day-chip:hover {
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+}
+
 .inline-week .day-chip.today {
   border-style: solid;
   border-color: rgba(14, 165, 233, 0.7);
   box-shadow: none;
+}
+
+.inline-week .day-chip.today:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .inline-calendar {
@@ -854,26 +912,50 @@ input[type="checkbox"] {
   right: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 0;
+  padding: 3px 6px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(15, 23, 42, 0.06);
   cursor: pointer;
   user-select: none;
   z-index: 2;
-}
-
-.view-toggle .separator {
-  color: var(--text-secondary);
+  transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
 }
 
 .view-toggle .toggle-option {
   font-weight: 700;
   color: var(--text-secondary);
+  padding: 4px 10px;
+  z-index: 1;
 }
 
 .view-toggle.active-month .toggle-option[data-target="month"],
 .view-toggle:not(.active-month) .toggle-option[data-target="week"] {
   color: var(--accent-strong);
+}
+
+.view-toggle::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 5px);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+  transition: transform 200ms ease;
+}
+
+.view-toggle.active-month::before {
+  transform: translateX(100%);
+}
+
+.view-toggle:hover {
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.view-toggle:active {
+  transform: scale(0.97);
 }
