@@ -104,41 +104,12 @@ body {
   box-shadow: 0 25px 80px rgba(79, 70, 229, 0.25), 0 8px 30px rgba(15, 23, 42, 0.1);
 }
 
-.tab-nav {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 8px;
-  margin-bottom: 18px;
-}
-
-.tab {
-  padding: 12px 0;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 600;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 300ms ease;
-}
-
-.tab.active {
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--accent-strong);
-  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.25);
-}
-
 .view {
   display: none;
 }
 
 .view.active {
   display: block;
-}
-
-.hidden {
-  display: none;
 }
 
 .section-card {
@@ -151,7 +122,17 @@ body {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+}
+
+.calendar-wrapper + .section-head {
+  margin-top: 8px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
 }
 
 .eyebrow {
@@ -196,7 +177,7 @@ body {
 }
 
 .collapsible {
-  margin-top: 10px;
+  margin-top: 2.5px;
 }
 
 .collapsible-head {
@@ -254,6 +235,7 @@ body {
   border: 1px solid var(--border);
   backdrop-filter: blur(10px);
   transition: all 300ms ease;
+  cursor: pointer;
 }
 
 .item:hover {
@@ -294,6 +276,13 @@ body {
   transition: all 300ms ease;
 }
 
+.chip.toggle-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 1.2em;
+}
+
 .chip.small {
   padding: 6px 10px;
   font-size: 12px;
@@ -321,9 +310,9 @@ body {
 }
 
 .toggle-btn {
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--accent-strong);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: transparent;
+  color: #0f172a;
+  border: none;
 }
 
 .primary-btn {
@@ -378,6 +367,30 @@ body {
 
 .ghost-btn:hover {
   background: rgba(255, 255, 255, 0.75);
+}
+
+.btn-add-event {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9 55%, #22d3ee);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.2);
+}
+
+.btn-add-event:hover {
+  background: linear-gradient(135deg, #0369a1, #0ea5e9 55%, #38bdf8);
+  color: #fff;
+}
+
+.btn-add-task {
+  background: linear-gradient(135deg, #0f766e, #10b981 55%, #34d399);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.2);
+}
+
+.btn-add-task:hover {
+  background: linear-gradient(135deg, #0b5250, #0f766e 50%, #22c55e);
+  color: #fff;
 }
 
 .chip.active-toggle {
@@ -740,6 +753,10 @@ input[type="checkbox"] {
 
 .calendar-wrapper.month-mode {
   /* 背景や余白の調整はここに集約。高さはJSで可変制御する。 */
+}
+
+.calendar-wrapper + .section-head {
+  margin-top: 10px;
 }
 
 .inline-week,

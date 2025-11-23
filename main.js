@@ -392,8 +392,6 @@ function wireEvents() {
 
   document.getElementById('addTaskToday').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
   document.getElementById('addEventToday').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
-  document.getElementById('addQuickTask').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
-  document.getElementById('addQuickEvent').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.close));
   });
