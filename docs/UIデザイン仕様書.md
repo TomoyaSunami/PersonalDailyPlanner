@@ -1,4 +1,4 @@
-# DayFlow UI デザインシステム仕様書
+# PersonalDaylyPlanner UI デザインシステム仕様書
 
 ## 1. デザインコンセプト
 

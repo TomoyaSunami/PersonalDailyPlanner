@@ -143,7 +143,7 @@ function renderEventsList(container, events) {
         <p class="title">${ev.title}</p>
         ${ev.memo ? `<p class="meta">${ev.memo}</p>` : ''}
       </div>
-      <button class="chip ghost small" data-id="${ev.id}" data-type="event">削除</button>
+      <button class="chip ghost small icon-trash" data-id="${ev.id}" data-type="event" aria-label="削除" title="削除"><span class="icon-trash-symbol" aria-hidden="true"></span></button>
     `;
     const deleteBtn = li.querySelector('button');
     deleteBtn.addEventListener('click', (e) => {
@@ -171,7 +171,7 @@ function renderTasksList(container, tasks) {
         <p class="title">${task.title}</p>
         <p class="meta">${task.note || ''}</p>
       </div>
-      <button class="chip ghost small btn-task-delete" aria-label="削除" title="削除">🗑</button>
+      <button class="chip ghost small btn-task-delete icon-trash" aria-label="削除" title="削除"><span class="icon-trash-symbol" aria-hidden="true"></span></button>
     `;
     const checkbox = li.querySelector('input');
     checkbox.addEventListener('click', (e) => e.stopPropagation());
