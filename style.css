@@ -819,10 +819,6 @@ input[type="checkbox"] {
   margin-top: 8px;
 }
 
-.calendar-wrapper.month-mode {
-  /* 背景や余白の調整はここに集約。高さはJSで可変制御する。 */
-}
-
 .calendar-wrapper + .section-head {
   margin-top: 10px;
 }
