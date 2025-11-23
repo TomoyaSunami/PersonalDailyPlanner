@@ -479,14 +479,22 @@ function updateCalendarView() {
   const toggle = document.getElementById('goCalendar');
   if (!wrapper || !inlineWeek || !inlineCalendar || !toggle) return;
 
-  wrapper.classList.toggle('month-mode', state.showCalendarInline);
-  inlineWeek.classList.toggle('is-active', !state.showCalendarInline);
-  inlineCalendar.classList.toggle('is-active', state.showCalendarInline);
-  toggle.classList.toggle('active-month', state.showCalendarInline);
+  const targetIsMonth = state.showCalendarInline;
+  const currentlyActive = inlineWeek.classList.contains('is-active') ? inlineWeek : inlineCalendar;
+  const currentHeight = currentlyActive.scrollHeight || wrapper.offsetHeight;
+  if (currentHeight) {
+    wrapper.style.height = `${currentHeight}px`;
+    wrapper.style.maxHeight = `${currentHeight}px`;
+  }
 
-  const activeEl = state.showCalendarInline ? inlineCalendar : inlineWeek;
   requestAnimationFrame(() => {
-    const targetHeight = activeEl.scrollHeight;
+    wrapper.classList.toggle('month-mode', targetIsMonth);
+    inlineWeek.classList.toggle('is-active', !targetIsMonth);
+    inlineCalendar.classList.toggle('is-active', targetIsMonth);
+    toggle.classList.toggle('active-month', targetIsMonth);
+
+    const targetEl = targetIsMonth ? inlineCalendar : inlineWeek;
+    const targetHeight = targetEl.scrollHeight || currentHeight;
     wrapper.style.height = `${targetHeight}px`;
     wrapper.style.maxHeight = `${targetHeight}px`;
   });

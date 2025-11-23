@@ -814,7 +814,8 @@ input[type="checkbox"] {
   position: relative;
   overflow: hidden;
   height: auto;
-  transition: height 200ms ease-out;
+  transition: height 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              max-height 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
   margin-top: 8px;
 }
 
