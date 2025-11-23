@@ -117,6 +117,7 @@ function render() {
   renderToday();
   renderWeekStrips();
   renderCalendar();
+  updateCalendarView();
 }
 
 function renderToday() {
@@ -138,21 +139,7 @@ function renderToday() {
   const progress = document.getElementById('taskProgress');
   const doneCount = dayTasks.filter(t => t.done).length;
   progress.textContent = `${doneCount}/${dayTasks.length} 完了`;
-
-  const weekBlock = document.querySelector('.inline-week');
-  const calendarBlock = document.getElementById('calendarInline');
-  const goCalBtn = document.getElementById('goCalendar');
-  if (state.showCalendarInline) {
-    weekBlock.classList.add('hidden');
-    calendarBlock.classList.remove('hidden');
-    goCalBtn.textContent = '📅 ON';
-    goCalBtn.classList.add('active-toggle');
-  } else {
-    weekBlock.classList.remove('hidden');
-    calendarBlock.classList.add('hidden');
-    goCalBtn.textContent = '📅';
-    goCalBtn.classList.remove('active-toggle');
-  }
+  updateCalendarView();
 }
 
 function renderEventsList(container, events) {
@@ -395,11 +382,11 @@ function wireEvents() {
   if (prevMonthBtn && nextMonthBtn) {
     prevMonthBtn.addEventListener('click', () => {
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
-      renderCalendar();
+      render();
     });
     nextMonthBtn.addEventListener('click', () => {
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
-      renderCalendar();
+      render();
     });
   }
 
@@ -459,3 +446,23 @@ document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
   render();
 });
+
+function updateCalendarView() {
+  const wrapper = document.querySelector('.calendar-wrapper');
+  const inlineWeek = document.getElementById('inlineWeek');
+  const inlineCalendar = document.getElementById('calendarInline');
+  const toggle = document.getElementById('goCalendar');
+  if (!wrapper || !inlineWeek || !inlineCalendar || !toggle) return;
+
+  wrapper.classList.toggle('month-mode', state.showCalendarInline);
+  inlineWeek.classList.toggle('is-active', !state.showCalendarInline);
+  inlineCalendar.classList.toggle('is-active', state.showCalendarInline);
+  toggle.classList.toggle('active-month', state.showCalendarInline);
+
+  const activeEl = state.showCalendarInline ? inlineCalendar : inlineWeek;
+  requestAnimationFrame(() => {
+    const targetHeight = activeEl.scrollHeight;
+    wrapper.style.height = `${targetHeight}px`;
+    wrapper.style.maxHeight = `${targetHeight}px`;
+  });
+}

@@ -730,8 +730,28 @@ input[type="checkbox"] {
   box-shadow: none;
 }
 
-.inline-week {
+.calendar-wrapper {
+  position: relative;
+  overflow: hidden;
+  height: auto;
+  transition: height 200ms ease-out;
   margin-top: 8px;
+}
+
+.calendar-wrapper.month-mode {
+  /* 背景や余白の調整はここに集約。高さはJSで可変制御する。 */
+}
+
+.inline-week,
+.inline-calendar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
   box-shadow: none;
   background: rgba(255, 255, 255, 0.25);
   border: 1px dashed var(--border);
@@ -739,11 +759,19 @@ input[type="checkbox"] {
   padding: 12px 14px;
 }
 
+.inline-week.is-active,
+.inline-calendar.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .inline-week .week-strip {
   margin: 4px 0 4px;
 }
 
-.inline-week .section-head {
+.inline-week .section-head,
+.inline-calendar .section-head {
   align-items: center;
 }
 
@@ -758,6 +786,11 @@ input[type="checkbox"] {
   border-style: solid;
   border-color: rgba(14, 165, 233, 0.7);
   box-shadow: none;
+}
+
+.inline-calendar {
+  background: rgba(255, 255, 255, 0.35);
+  border-style: dashed;
 }
 
 .inline-week .day-chip.active {
@@ -795,4 +828,33 @@ input[type="checkbox"] {
   .calendar {
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   }
+}
+.view-toggle {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  user-select: none;
+  z-index: 2;
+}
+
+.view-toggle .separator {
+  color: var(--text-secondary);
+}
+
+.view-toggle .toggle-option {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.view-toggle.active-month .toggle-option[data-target="month"],
+.view-toggle:not(.active-month) .toggle-option[data-target="week"] {
+  color: var(--accent-strong);
 }

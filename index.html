@@ -32,32 +32,36 @@
     <section id="todayView" class="view active">
       <div class="stack">
         <article class="glass-card section-card">
-          <div class="inline-week">
-            <div class="section-head">
-              <div class="week-controls">
-                <button class="icon-btn" id="prevWeekInline">←</button>
-                <p class="week-range" id="weekRangeInline"></p>
-                <button class="icon-btn" id="nextWeekInline">→</button>
-              </div>
+          <div class="calendar-wrapper">
+            <div class="view-toggle" id="goCalendar" aria-label="週と月の切替">
+              <span class="toggle-option" data-target="week">週</span>
+              <span class="separator">｜</span>
+              <span class="toggle-option" data-target="month">月</span>
             </div>
-            <div class="week-strip" id="weekStripInline"></div>
-          </div>
-          <div class="inline-calendar hidden" id="calendarInline">
-            <div class="section-head">
-              <div class="week-controls">
-                <button class="icon-btn" id="prevMonth">←</button>
-                <p class="week-range" id="monthLabel"></p>
-                <button class="icon-btn" id="nextMonth">→</button>
+            <div class="inline-week is-active" id="inlineWeek">
+              <div class="section-head">
+                <div class="week-controls">
+                  <button class="icon-btn" id="prevWeekInline">←</button>
+                  <p class="week-range" id="weekRangeInline"></p>
+                  <button class="icon-btn" id="nextWeekInline">→</button>
+                </div>
               </div>
+              <div class="week-strip" id="weekStripInline"></div>
             </div>
-            <div class="calendar" id="calendarGrid"></div>
+            <div class="inline-calendar" id="calendarInline">
+              <div class="section-head">
+                <div class="week-controls">
+                  <button class="icon-btn" id="prevMonth">←</button>
+                  <p class="week-range" id="monthLabel"></p>
+                  <button class="icon-btn" id="nextMonth">→</button>
+                </div>
+              </div>
+              <div class="calendar" id="calendarGrid"></div>
+            </div>
           </div>
           <div class="section-head">
             <div>
               <h2 id="todayLabel"></h2>
-            </div>
-            <div class="week-controls">
-              <button class="chip ghost" id="goCalendar" aria-label="カレンダーへ">📅</button>
             </div>
           </div>
 
