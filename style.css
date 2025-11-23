@@ -137,6 +137,10 @@ body {
   display: block;
 }
 
+.hidden {
+  display: none;
+}
+
 .section-card {
   padding: 22px;
 }
@@ -376,6 +380,13 @@ body {
   background: rgba(255, 255, 255, 0.75);
 }
 
+.chip.active-toggle {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: var(--accent-strong);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
 .icon-btn {
   padding: 8px 12px;
   border-radius: 12px;
@@ -467,6 +478,13 @@ body {
   border-color: rgba(99, 102, 241, 0.3);
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3);
   color: var(--accent-strong);
+}
+
+.day-chip.today {
+  border-color: rgba(14, 165, 233, 0.7);
+  box-shadow: inset 0 0 0 2px rgba(14, 165, 233, 0.35);
+  background: rgba(14, 165, 233, 0.08);
+  border-style: solid;
 }
 
 .selected-day.nested {
@@ -575,6 +593,11 @@ body {
   background: rgba(99, 102, 241, 0.12);
   border-color: rgba(99, 102, 241, 0.3);
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.calendar-cell.today {
+  border-color: rgba(14, 165, 233, 0.7);
+  box-shadow: none;
 }
 
 .modal-backdrop {
@@ -728,6 +751,12 @@ input[type="checkbox"] {
   padding: 10px 8px;
   background: rgba(255, 255, 255, 0.35);
   border-style: dashed;
+  box-shadow: none;
+}
+
+.inline-week .day-chip.today {
+  border-style: solid;
+  border-color: rgba(14, 165, 233, 0.7);
   box-shadow: none;
 }
 

@@ -12,16 +12,15 @@ const state = {
   selectedCalendarDate: toISO(today),
   weekStart: startOfWeek(today),
   calendarMonth: new Date(today.getFullYear(), today.getMonth(), 1),
-  showAllTodayTasks: false,
   taskModalTargetDate: null,
-  eventModalDate: toISO(today)
+  eventModalDate: toISO(today),
+  showCalendarInline: false
 };
 
 function startOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDay() === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
+  const day = d.getDay(); // 0 = Sun
+  d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -139,6 +138,21 @@ function renderToday() {
   const progress = document.getElementById('taskProgress');
   const doneCount = dayTasks.filter(t => t.done).length;
   progress.textContent = `${doneCount}/${dayTasks.length} 完了`;
+
+  const weekBlock = document.querySelector('.inline-week');
+  const calendarBlock = document.getElementById('calendarInline');
+  const goCalBtn = document.getElementById('goCalendar');
+  if (state.showCalendarInline) {
+    weekBlock.classList.add('hidden');
+    calendarBlock.classList.remove('hidden');
+    goCalBtn.textContent = '📅 ON';
+    goCalBtn.classList.add('active-toggle');
+  } else {
+    weekBlock.classList.remove('hidden');
+    calendarBlock.classList.add('hidden');
+    goCalBtn.textContent = '📅';
+    goCalBtn.classList.remove('active-toggle');
+  }
 }
 
 function renderEventsList(container, events) {
@@ -206,6 +220,7 @@ function renderWeekStrip(container, rangeLabel, activeDate) {
   const start = state.weekStart;
   const end = addDays(start, 6);
   rangeLabel.textContent = `${formatDateLabel(start)} 〜 ${formatDateLabel(end)}`;
+  const todayIso = toISO(today);
   for (let i = 0; i < 7; i++) {
     const dateObj = addDays(start, i);
     const iso = toISO(dateObj);
@@ -216,8 +231,9 @@ function renderWeekStrip(container, rangeLabel, activeDate) {
     if (events.length) el.classList.add('has-event');
     if (tasks.length) el.classList.add('has-task');
     if (iso === activeDate) el.classList.add('active');
+    if (iso === todayIso) el.classList.add('today');
     el.innerHTML = `
-      <div class="dow">${['月', '火', '水', '木', '金', '土', '日'][dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]}</div>
+      <div class="dow">${['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()]}</div>
       <div class="date">${dateObj.getDate()}</div>
       <span class="badge-dot"></span>
       <span class="badge-square"></span>
@@ -234,14 +250,12 @@ function renderWeekStrip(container, rangeLabel, activeDate) {
 
 function renderCalendar() {
   const monthLabel = document.getElementById('monthLabel');
-  const selectedLabel = document.getElementById('selectedCalendarDay');
   const grid = document.getElementById('calendarGrid');
 
   monthLabel.textContent = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long' }).format(state.calendarMonth);
-  selectedLabel.textContent = formatLongDate(state.selectedCalendarDate);
 
   grid.innerHTML = '';
-  const weekdays = ['月', '火', '水', '木', '金', '土', '日'];
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
   weekdays.forEach(day => {
     const head = document.createElement('div');
     head.textContent = day;
@@ -250,7 +264,7 @@ function renderCalendar() {
   });
 
   const firstDay = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), 1);
-  const startWeekday = (firstDay.getDay() + 6) % 7;
+  const startWeekday = firstDay.getDay(); // Sunday start
   for (let i = 0; i < startWeekday; i++) {
     const empty = document.createElement('div');
     grid.appendChild(empty);
@@ -263,6 +277,7 @@ function renderCalendar() {
     const cell = document.createElement('div');
     cell.className = 'calendar-cell';
     if (iso === state.selectedCalendarDate) cell.classList.add('active');
+    if (iso === toISO(today)) cell.classList.add('today');
     const hasEvents = state.events.some(ev => ev.date === iso);
     const hasTasks = state.tasks.some(t => t.date === iso && !t.done);
     cell.innerHTML = `
@@ -276,34 +291,10 @@ function renderCalendar() {
       state.selectedCalendarDate = iso;
       state.selectedDate = iso;
       state.weekStart = startOfWeek(dateObj);
-      renderCalendarDetails();
-      renderWeekStrips();
+      render();
     });
     grid.appendChild(cell);
   }
-  renderCalendarDetails();
-}
-
-function renderCalendarDetails() {
-  document.getElementById('selectedCalendarDay').textContent = formatLongDate(state.selectedCalendarDate);
-  const eventsList = document.getElementById('calendarEvents');
-  const tasksList = document.getElementById('calendarTasks');
-  const events = state.events.filter(ev => ev.date === state.selectedCalendarDate);
-  const tasks = state.tasks.filter(t => t.date === state.selectedCalendarDate);
-
-  eventsList.innerHTML = events.length ? '' : '<li class="muted">予定なし</li>';
-  events.sort((a, b) => (a.time || '').localeCompare(b.time || '')).forEach(ev => {
-    const li = document.createElement('li');
-    li.textContent = `${ev.time || '終日'} ${ev.title}`;
-    eventsList.appendChild(li);
-  });
-
-  tasksList.innerHTML = tasks.length ? '' : '<li class="muted">タスクなし</li>';
-  tasks.forEach(t => {
-    const li = document.createElement('li');
-    li.textContent = `${t.title}（${relativeBadge(t.date)}）`;
-    tasksList.appendChild(li);
-  });
 }
 
 function toggleTask(id, done) {
@@ -376,12 +367,6 @@ function pickRelativeForDate(dateIso) {
 }
 
 function wireEvents() {
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      setActiveView(tab.dataset.target);
-    });
-  });
-
   document.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const section = document.querySelector(`.collapsible[data-section="${btn.dataset.toggle}"]`);
@@ -398,24 +383,30 @@ function wireEvents() {
     state.weekStart = addDays(state.weekStart, 7);
     renderWeekStrips();
   });
-  document.getElementById('openCalendar').addEventListener('click', () => {
-    setActiveView('calendarView');
+  document.getElementById('goCalendar').addEventListener('click', () => {
+    state.showCalendarInline = !state.showCalendarInline;
+    if (!state.showCalendarInline) {
+      state.weekStart = startOfWeek(new Date(state.selectedDate));
+    }
+    render();
   });
-  document.getElementById('prevMonth').addEventListener('click', () => {
-    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
-    renderCalendar();
-  });
-  document.getElementById('nextMonth').addEventListener('click', () => {
-    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
-    renderCalendar();
-  });
+  const prevMonthBtn = document.getElementById('prevMonth');
+  const nextMonthBtn = document.getElementById('nextMonth');
+  if (prevMonthBtn && nextMonthBtn) {
+    prevMonthBtn.addEventListener('click', () => {
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    nextMonthBtn.addEventListener('click', () => {
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
+      renderCalendar();
+    });
+  }
 
   document.getElementById('addTaskToday').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
   document.getElementById('addEventToday').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
   document.getElementById('addQuickTask').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
   document.getElementById('addQuickEvent').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
-  document.getElementById('addItemCalendar').addEventListener('click', () => openTaskModal(state.selectedCalendarDate));
-
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.close));
   });
@@ -468,18 +459,3 @@ document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
   render();
 });
-
-function setActiveView(targetId) {
-  document.querySelectorAll('.tab').forEach(t => {
-    if (t.dataset.target === targetId) {
-      t.classList.add('active');
-    } else {
-      t.classList.remove('active');
-    }
-  });
-  document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-  const target = document.getElementById(targetId);
-  if (target) {
-    target.classList.add('active');
-  }
-}

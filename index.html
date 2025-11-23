@@ -29,11 +29,6 @@
       <div class="badge">Cool Glass • v1.0</div>
     </header>
 
-    <nav class="tab-nav glass-card">
-      <button class="tab active" data-target="todayView">選択日</button>
-      <button class="tab" data-target="calendarView">カレンダー</button>
-    </nav>
-
     <section id="todayView" class="view active">
       <div class="stack">
         <article class="glass-card section-card">
@@ -44,13 +39,25 @@
                 <p class="week-range" id="weekRangeInline"></p>
                 <button class="icon-btn" id="nextWeekInline">→</button>
               </div>
-              <button class="icon-btn ghost" id="openCalendar" aria-label="カレンダーへ">📅</button>
             </div>
             <div class="week-strip" id="weekStripInline"></div>
+          </div>
+          <div class="inline-calendar hidden" id="calendarInline">
+            <div class="section-head">
+              <div class="week-controls">
+                <button class="icon-btn" id="prevMonth">←</button>
+                <p class="week-range" id="monthLabel"></p>
+                <button class="icon-btn" id="nextMonth">→</button>
+              </div>
+            </div>
+            <div class="calendar" id="calendarGrid"></div>
           </div>
           <div class="section-head">
             <div>
               <h2 id="todayLabel"></h2>
+            </div>
+            <div class="week-controls">
+              <button class="chip ghost" id="goCalendar" aria-label="カレンダーへ">📅</button>
             </div>
           </div>
 
@@ -86,41 +93,6 @@
           </div>
         </article>
       </div>
-    </section>
-
-    <section id="calendarView" class="view">
-      <article class="glass-card section-card">
-        <div class="section-head">
-          <div>
-            <h2>カレンダー</h2>
-          </div>
-          <div class="week-controls">
-            <button class="icon-btn" id="prevMonth">←</button>
-            <p class="week-range" id="monthLabel"></p>
-            <button class="icon-btn" id="nextMonth">→</button>
-          </div>
-        </div>
-        <div class="calendar" id="calendarGrid"></div>
-        <div class="selected-day glass-card nested">
-          <div class="collapsible-head">
-            <div>
-              <p class="eyebrow">選択日</p>
-              <h3 id="selectedCalendarDay"></h3>
-            </div>
-            <button class="chip ghost" id="addItemCalendar">＋ 追加</button>
-          </div>
-          <div class="split">
-            <div>
-              <p class="eyebrow">予定</p>
-              <ul class="mini-list" id="calendarEvents"></ul>
-            </div>
-            <div>
-              <p class="eyebrow">タスク</p>
-              <ul class="mini-list" id="calendarTasks"></ul>
-            </div>
-          </div>
-        </div>
-      </article>
     </section>
   </main>
 
