@@ -448,7 +448,7 @@ body {
 
 .week-strip {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
@@ -591,7 +591,7 @@ body {
 
 .calendar {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   margin: 12px 0;
 }
@@ -819,6 +819,10 @@ input[type="checkbox"] {
   margin-top: 8px;
 }
 
+.calendar-wrapper .section-head {
+  padding-right: 90px;
+}
+
 .calendar-wrapper + .section-head {
   margin-top: 10px;
 }
@@ -899,42 +903,16 @@ input[type="checkbox"] {
   font-size: 16px;
 }
 
-@media (max-width: 960px) {
-  .grid.two-col {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .tab-nav {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .section-card {
-    padding: 16px;
-  }
-
-  .week-strip {
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  }
-
-  .calendar {
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  }
-}
 .view-toggle {
+  --toggle-pad-x: 6px;
+  --toggle-pad-y: 3px;
   position: absolute;
   top: 10px;
   right: 12px;
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 3px 6px;
+  padding: var(--toggle-pad-y) var(--toggle-pad-x);
   border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(15, 23, 42, 0.06);
@@ -942,6 +920,7 @@ input[type="checkbox"] {
   user-select: none;
   z-index: 2;
   transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+  overflow: hidden;
 }
 
 .view-toggle .toggle-option {
@@ -949,6 +928,8 @@ input[type="checkbox"] {
   color: var(--text-secondary);
   padding: 4px 10px;
   z-index: 1;
+  flex: 1 1 50%;
+  text-align: center;
 }
 
 .view-toggle.active-month .toggle-option[data-target="month"],
@@ -959,10 +940,10 @@ input[type="checkbox"] {
 .view-toggle::before {
   content: '';
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 5px);
+  top: var(--toggle-pad-y);
+  bottom: var(--toggle-pad-y);
+  left: var(--toggle-pad-x);
+  width: calc((100% - (var(--toggle-pad-x) * 2)) / 2);
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
@@ -979,4 +960,94 @@ input[type="checkbox"] {
 
 .view-toggle:active {
   transform: scale(0.97);
+}
+
+@media (max-width: 960px) {
+  .grid.two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tab-nav {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .calendar-wrapper .section-head {
+    padding-right: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .week-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-card {
+    padding: 16px;
+  }
+
+  .week-strip {
+    gap: 6px;
+  }
+
+  .day-chip {
+    padding: 10px 6px;
+  }
+
+  .calendar {
+    gap: 6px;
+  }
+
+  .calendar-cell {
+    min-height: 60px;
+    padding: 10px 8px;
+  }
+
+  .day-chip .badge-dot {
+    top: auto;
+    bottom: 2px;
+    right: 20px;
+  }
+
+  .day-chip .badge-square {
+    bottom: 2px;
+    right: 6px;
+  }
+
+  .view-toggle {
+    position: relative;
+    top: auto;
+    right: auto;
+    align-self: flex-end;
+    margin-bottom: 8px;
+    transform: none;
+    margin-left: auto;
+  }
+
+  .calendar-wrapper .section-head {
+    padding-right: 0;
+  }
+
+  .inline-week,
+  .inline-calendar {
+    position: static;
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
+    display: none;
+  }
+
+  .inline-week.is-active,
+  .inline-calendar.is-active {
+    opacity: 1;
+    pointer-events: auto;
+    display: block;
+  }
 }

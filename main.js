@@ -470,6 +470,16 @@ document.addEventListener('DOMContentLoaded', () => {
   loadState();
   wireEvents();
   render();
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (resizeTimer) {
+      clearTimeout(resizeTimer);
+    }
+    resizeTimer = setTimeout(() => {
+      updateCalendarView();
+    }, 150);
+  });
 });
 
 function updateCalendarView() {
@@ -479,7 +489,19 @@ function updateCalendarView() {
   const toggle = document.getElementById('goCalendar');
   if (!wrapper || !inlineWeek || !inlineCalendar || !toggle) return;
 
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
   const targetIsMonth = state.showCalendarInline;
+  if (isMobile) {
+    wrapper.classList.toggle('month-mode', targetIsMonth);
+    inlineWeek.classList.toggle('is-active', !targetIsMonth);
+    inlineCalendar.classList.toggle('is-active', targetIsMonth);
+    toggle.classList.toggle('active-month', targetIsMonth);
+    wrapper.style.height = 'auto';
+    wrapper.style.maxHeight = 'none';
+    return;
+  }
+
   const currentlyActive = inlineWeek.classList.contains('is-active') ? inlineWeek : inlineCalendar;
   const currentHeight = currentlyActive.scrollHeight || wrapper.offsetHeight;
   if (currentHeight) {
