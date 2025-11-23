@@ -46,15 +46,20 @@ function formatDateLabel(date) {
 }
 
 function formatLongDate(date) {
-  return new Intl.DateTimeFormat('ja-JP', {
+  const dt = new Date(date);
+  const base = new Intl.DateTimeFormat('ja-JP', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric',
-    weekday: 'long'
-  }).format(new Date(date));
+    day: 'numeric'
+  }).format(dt);
+  const weekday = new Intl.DateTimeFormat('ja-JP', {
+    weekday: 'short'
+  }).format(dt);
+  return `${base}(${weekday})`;
 }
 
 function relativeBadge(date) {
+  if (!date) return '未設定';
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
   const now = new Date();
@@ -117,24 +122,23 @@ function render() {
 
 function renderToday() {
   const todayLabel = document.getElementById('todayLabel');
-  const relativeLabel = document.getElementById('relativeLabel');
+  const selectedIso = state.selectedDate || toISO(today);
   const todayIso = toISO(today);
-  todayLabel.textContent = formatLongDate(todayIso);
-  relativeLabel.textContent = '今日・短期の整理';
+  const labelText = selectedIso === todayIso ? '今日' : formatLongDate(selectedIso);
+  todayLabel.textContent = labelText;
+  document.getElementById('eventsTitle').textContent = '予定';
+  document.getElementById('tasksTitle').textContent = 'タスク';
 
-  const todayEvents = state.events.filter(ev => ev.date === todayIso);
-  const todayTasks = state.tasks.filter(task => !task.done && (task.date ? task.date === todayIso : true));
+  const dayEvents = state.events.filter(ev => ev.date === selectedIso);
+  const dayTasks = state.tasks.filter(task => (task.date ? task.date === selectedIso : true));
 
-  renderEventsList(document.getElementById('todayEvents'), todayEvents);
+  renderEventsList(document.getElementById('todayEvents'), dayEvents);
 
   const taskList = document.getElementById('todayTasks');
-  let tasksToShow = todayTasks;
-  if (!state.showAllTodayTasks) {
-    tasksToShow = todayTasks.slice(0, 3);
-  }
-  renderTasksList(taskList, tasksToShow);
-  const toggle = document.getElementById('toggleTaskLimit');
-  toggle.textContent = state.showAllTodayTasks ? '全て表示中' : '3件表示';
+  renderTasksList(taskList, dayTasks);
+  const progress = document.getElementById('taskProgress');
+  const doneCount = dayTasks.filter(t => t.done).length;
+  progress.textContent = `${doneCount}/${dayTasks.length} 完了`;
 }
 
 function renderEventsList(container, events) {
@@ -170,7 +174,7 @@ function renderTasksList(container, tasks) {
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done));
   sorted.forEach(task => {
     const li = document.createElement('li');
-    li.className = 'item';
+    li.className = `item ${task.done ? 'done' : ''}`;
     li.innerHTML = `
       <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="complete task">
       <div>
@@ -181,15 +185,20 @@ function renderTasksList(container, tasks) {
         <p class="status ${task.done ? 'done' : ''}">${task.date ? relativeBadge(task.date) : '期限なし'}</p>
       </div>
     `;
-    li.querySelector('input').addEventListener('change', (e) => toggleTask(task.id, e.target.checked));
+    const checkbox = li.querySelector('input');
+    checkbox.addEventListener('change', (e) => toggleTask(task.id, e.target.checked));
+    li.addEventListener('click', (e) => {
+      // Avoid double toggling when clicking directly on the checkbox
+      if (e.target.tagName.toLowerCase() === 'input') return;
+      checkbox.checked = !checkbox.checked;
+      toggleTask(task.id, checkbox.checked);
+    });
     container.appendChild(li);
   });
 }
 
 function renderWeekStrips() {
-  renderWeekStrip(document.getElementById('weekStrip'), document.getElementById('weekRange'), state.selectedDate);
-  renderWeekStrip(document.getElementById('weekStripAlt'), document.getElementById('weekRangeAlt'), state.selectedDate);
-  renderSelectedDayDetails();
+  renderWeekStrip(document.getElementById('weekStripInline'), document.getElementById('weekRangeInline'), state.selectedDate);
 }
 
 function renderWeekStrip(container, rangeLabel, activeDate) {
@@ -221,29 +230,6 @@ function renderWeekStrip(container, rangeLabel, activeDate) {
     });
     container.appendChild(el);
   }
-}
-
-function renderSelectedDayDetails() {
-  const label = document.getElementById('selectedDayLabel');
-  label.textContent = formatLongDate(state.selectedDate);
-  const events = state.events.filter(ev => ev.date === state.selectedDate);
-  const tasks = state.tasks.filter(t => t.date === state.selectedDate && !t.done);
-  const eventsList = document.getElementById('selectedDayEvents');
-  const tasksList = document.getElementById('selectedDayTasks');
-
-  eventsList.innerHTML = events.length ? '' : '<li class="muted">予定なし</li>';
-  events.sort((a, b) => (a.time || '').localeCompare(b.time || '')).forEach(ev => {
-    const li = document.createElement('li');
-    li.textContent = `${ev.time || '終日'} ${ev.title}`;
-    eventsList.appendChild(li);
-  });
-
-  tasksList.innerHTML = tasks.length ? '' : '<li class="muted">タスクなし</li>';
-  tasks.forEach(t => {
-    const li = document.createElement('li');
-    li.textContent = t.title;
-    tasksList.appendChild(li);
-  });
 }
 
 function renderCalendar() {
@@ -392,10 +378,7 @@ function pickRelativeForDate(dateIso) {
 function wireEvents() {
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.target).classList.add('active');
+      setActiveView(tab.dataset.target);
     });
   });
 
@@ -403,33 +386,21 @@ function wireEvents() {
     btn.addEventListener('click', () => {
       const section = document.querySelector(`.collapsible[data-section="${btn.dataset.toggle}"]`);
       const collapsed = section.classList.toggle('collapsed');
-      btn.textContent = collapsed ? '展開する' : '折り畳む';
+      btn.textContent = collapsed ? '▸' : '▾';
     });
   });
 
-  document.getElementById('toggleTaskLimit').addEventListener('click', () => {
-    state.showAllTodayTasks = !state.showAllTodayTasks;
-    document.getElementById('toggleTaskLimit').textContent = state.showAllTodayTasks ? '全て表示中' : '3件表示';
-    renderToday();
-  });
-
-  document.getElementById('prevWeek').addEventListener('click', () => {
+  document.getElementById('prevWeekInline').addEventListener('click', () => {
     state.weekStart = addDays(state.weekStart, -7);
     renderWeekStrips();
   });
-  document.getElementById('nextWeek').addEventListener('click', () => {
+  document.getElementById('nextWeekInline').addEventListener('click', () => {
     state.weekStart = addDays(state.weekStart, 7);
     renderWeekStrips();
   });
-  document.getElementById('prevWeekAlt').addEventListener('click', () => {
-    state.weekStart = addDays(state.weekStart, -7);
-    renderWeekStrips();
+  document.getElementById('openCalendar').addEventListener('click', () => {
+    setActiveView('calendarView');
   });
-  document.getElementById('nextWeekAlt').addEventListener('click', () => {
-    state.weekStart = addDays(state.weekStart, 7);
-    renderWeekStrips();
-  });
-
   document.getElementById('prevMonth').addEventListener('click', () => {
     state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
     renderCalendar();
@@ -439,11 +410,10 @@ function wireEvents() {
     renderCalendar();
   });
 
-  document.getElementById('addTaskToday').addEventListener('click', () => openTaskModal(toISO(today)));
-  document.getElementById('addEventToday').addEventListener('click', () => openEventModal(toISO(today)));
-  document.getElementById('addQuickTask').addEventListener('click', () => openTaskModal(toISO(today)));
-  document.getElementById('addQuickEvent').addEventListener('click', () => openEventModal(toISO(today)));
-  document.getElementById('addItemSelected').addEventListener('click', () => openTaskModal(state.selectedDate));
+  document.getElementById('addTaskToday').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
+  document.getElementById('addEventToday').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
+  document.getElementById('addQuickTask').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
+  document.getElementById('addQuickEvent').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
   document.getElementById('addItemCalendar').addEventListener('click', () => openTaskModal(state.selectedCalendarDate));
 
   document.querySelectorAll('[data-close]').forEach(btn => {
@@ -498,3 +468,18 @@ document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
   render();
 });
+
+function setActiveView(targetId) {
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.dataset.target === targetId) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+  document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+  const target = document.getElementById(targetId);
+  if (target) {
+    target.classList.add('active');
+  }
+}

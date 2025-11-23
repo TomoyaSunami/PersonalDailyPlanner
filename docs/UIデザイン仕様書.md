@@ -41,6 +41,11 @@
 * Default: bg-white/40, border border-white/60, opacity-70
 * Focus: focus:bg-white/70, focus:ring-4 focus:ring-white/50
 
+### D. 折り畳みトグル
+
+* アイコンのみ（▾/▸）、左側に配置
+* 押下時に親セクションの開閉状態を反映してアイコンが切替
+
 ## 4. 主なコンポーネント詳細
 
 ### 4.1 Primary Button (.PrimaryAction)
@@ -58,6 +63,7 @@
 
 * 控えめなブラー（backdrop-blur-md）
 * Hover: shadow-lg, bg-white/60, scale-[1.01]
+* チェック済みタスクは opacity を下げ、タイトルに打消し線
 
 ## 5. 実装補足
 

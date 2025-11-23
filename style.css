@@ -203,6 +203,29 @@ body {
   flex-wrap: wrap;
 }
 
+.collapsible-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-bar {
+  width: 3px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.color-bar.event {
+  background: var(--accent-strong);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.35);
+}
+
+.color-bar.task {
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
 .collapsible-controls {
   display: flex;
   gap: 8px;
@@ -243,6 +266,14 @@ body {
   margin: 0;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.item.done {
+  opacity: 0.45;
+}
+
+.item.done .title {
+  text-decoration: line-through;
 }
 
 .chip {
@@ -469,6 +500,12 @@ body {
   margin-top: 8px;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .grid.two-col {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -668,6 +705,38 @@ input[type="checkbox"] {
 
 .section-card .nested {
   box-shadow: none;
+}
+
+.inline-week {
+  margin-top: 8px;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.inline-week .week-strip {
+  margin: 4px 0 4px;
+}
+
+.inline-week .section-head {
+  align-items: center;
+}
+
+.inline-week .day-chip {
+  padding: 10px 8px;
+  background: rgba(255, 255, 255, 0.35);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.inline-week .day-chip.active {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.inline-week .day-chip .date {
+  font-size: 16px;
 }
 
 @media (max-width: 960px) {
