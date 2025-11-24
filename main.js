@@ -41,6 +41,14 @@ function toISO(date) {
   return `${year}-${month}-${day}`;
 }
 
+function formatFixedDate(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}年${month}月${day}日`;
+}
+
 function formatLongDate(date) {
   const dt = new Date(date);
   const base = new Intl.DateTimeFormat('ja-JP', {
@@ -96,6 +104,7 @@ function render() {
   renderToday();
   renderWeekStrip();
   renderCalendar();
+  setWeekRangeWidth();
 }
 
 function renderToday() {
@@ -127,7 +136,7 @@ function renderWeekStrip() {
   strip.innerHTML = '';
   const start = state.weekStart;
   const end = addDays(start, 6);
-  range.textContent = `${formatLongDate(start).replace(/\(.+?\)/, '')} 〜 ${formatLongDate(end).replace(/\(.+?\)/, '')}`;
+  range.textContent = `${formatFixedDate(start)} 〜 ${formatFixedDate(end)}`;
 
   const todayIso = toISO(today);
   const activeIso = state.selectedDate;
@@ -511,8 +520,26 @@ function wireEvents() {
   });
 }
 
+function setWeekRangeWidth() {
+  const el = document.getElementById('weekRange');
+  if (!el) return;
+  const style = window.getComputedStyle(el);
+  const font = style.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const sample = '0000年00月00日 〜 0000年00月00日'; // 想定される最長テキスト（左右固定幅）
+  const canvas = setWeekRangeWidth.canvas || (setWeekRangeWidth.canvas = document.createElement('canvas'));
+  const ctx = canvas.getContext('2d');
+  ctx.font = font;
+  const padding = Number.parseFloat(style.paddingLeft || 0) + Number.parseFloat(style.paddingRight || 0);
+  const width = Math.ceil(ctx.measureText(sample).width + padding);
+  el.style.width = `${width}px`;
+  el.style.display = 'inline-block';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   wireEvents();
   render();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(setWeekRangeWidth).catch(() => {});
+  }
 });
