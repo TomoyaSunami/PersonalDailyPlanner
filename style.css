@@ -861,6 +861,11 @@ input[type="checkbox"] {
   accent-color: var(--accent-strong);
   width: 18px;
   height: 18px;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:hover {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
 }
 
 .status {
