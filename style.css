@@ -281,6 +281,7 @@ body {
 .item .title {
   margin: 0;
   font-weight: 600;
+  word-break: break-word;
 }
 
 .item .meta {
@@ -485,6 +486,18 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.week-controls .icon-btn:hover {
+  transform: translateY(-1px);
+  background: #fff;
+  border-color: var(--border);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08); /* item/day-chip hover と同じ陰影 */
+}
+
+.week-controls .icon-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 
 .week-strip {
@@ -866,6 +879,20 @@ input[type="checkbox"] {
 
 input[type="checkbox"]:hover {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.55);
+}
+
+.primary-btn:focus-visible,
+.ghost-btn:focus-visible,
+.icon-btn:focus-visible,
+.calendar-cell:focus-visible,
+.day-chip:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 3px;
 }
 
 .status {
