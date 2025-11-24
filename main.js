@@ -16,7 +16,7 @@ const state = {
   eventModalDate: toISO(today),
   editingTaskId: null,
   editingEventId: null,
-  showCalendarInline: false
+  isCalendarOpen: false
 };
 
 function startOfWeek(date) {
@@ -39,14 +39,6 @@ function toISO(date) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function formatDateLabel(date) {
-  return new Intl.DateTimeFormat('ja-JP', {
-    month: 'short',
-    day: 'numeric',
-    weekday: 'short'
-  }).format(new Date(date));
 }
 
 function formatLongDate(date) {
@@ -102,9 +94,8 @@ function persistState() {
 
 function render() {
   renderToday();
-  renderWeekStrips();
+  renderWeekStrip();
   renderCalendar();
-  updateCalendarView();
 }
 
 function renderToday() {
@@ -126,7 +117,47 @@ function renderToday() {
   const progress = document.getElementById('taskProgress');
   const doneCount = dayTasks.filter(t => t.done).length;
   progress.textContent = `${doneCount}/${dayTasks.length} 完了`;
-  updateCalendarView();
+}
+
+function renderWeekStrip() {
+  const strip = document.getElementById('weekStrip');
+  const range = document.getElementById('weekRange');
+  if (!strip || !range) return;
+
+  strip.innerHTML = '';
+  const start = state.weekStart;
+  const end = addDays(start, 6);
+  range.textContent = `${formatLongDate(start).replace(/\(.+?\)/, '')} 〜 ${formatLongDate(end).replace(/\(.+?\)/, '')}`;
+
+  const todayIso = toISO(today);
+  const activeIso = state.selectedDate;
+
+  for (let i = 0; i < 7; i++) {
+    const dateObj = addDays(start, i);
+    const iso = toISO(dateObj);
+    const events = state.events.filter(ev => ev.date === iso);
+    const tasks = state.tasks.filter(t => t.date === iso);
+    const el = document.createElement('button');
+    el.className = 'day-chip';
+    if (events.length) el.classList.add('has-event');
+    if (tasks.length) el.classList.add('has-task');
+    if (iso === activeIso) el.classList.add('active');
+    if (iso === todayIso) el.classList.add('today');
+    el.innerHTML = `
+      <div class="dow">${['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()]}</div>
+      <div class="date">${dateObj.getDate()}</div>
+      <span class="badge-dot"></span>
+      <span class="badge-square"></span>
+    `;
+    el.addEventListener('click', () => {
+      state.selectedDate = iso;
+      state.selectedCalendarDate = iso;
+      state.calendarMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+      state.weekStart = startOfWeek(dateObj);
+      render();
+    });
+    strip.appendChild(el);
+  }
 }
 
 function renderEventsList(container, events) {
@@ -192,46 +223,11 @@ function renderTasksList(container, tasks) {
   });
 }
 
-function renderWeekStrips() {
-  renderWeekStrip(document.getElementById('weekStripInline'), document.getElementById('weekRangeInline'), state.selectedDate);
-}
-
-function renderWeekStrip(container, rangeLabel, activeDate) {
-  container.innerHTML = '';
-  const start = state.weekStart;
-  const end = addDays(start, 6);
-  rangeLabel.textContent = `${formatDateLabel(start)} 〜 ${formatDateLabel(end)}`;
-  const todayIso = toISO(today);
-  for (let i = 0; i < 7; i++) {
-    const dateObj = addDays(start, i);
-    const iso = toISO(dateObj);
-    const events = state.events.filter(ev => ev.date === iso);
-    const tasks = state.tasks.filter(t => t.date === iso);
-    const el = document.createElement('button');
-    el.className = 'day-chip';
-    if (events.length) el.classList.add('has-event');
-    if (tasks.length) el.classList.add('has-task');
-    if (iso === activeDate) el.classList.add('active');
-    if (iso === todayIso) el.classList.add('today');
-    el.innerHTML = `
-      <div class="dow">${['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()]}</div>
-      <div class="date">${dateObj.getDate()}</div>
-      <span class="badge-dot"></span>
-      <span class="badge-square"></span>
-    `;
-    el.addEventListener('click', () => {
-      state.selectedDate = iso;
-      state.selectedCalendarDate = iso;
-      state.weekStart = startOfWeek(dateObj);
-      render();
-    });
-    container.appendChild(el);
-  }
-}
-
 function renderCalendar() {
   const monthLabel = document.getElementById('monthLabel');
   const grid = document.getElementById('calendarGrid');
+  if (!monthLabel || !grid) return;
+  const activeIso = state.selectedCalendarDate || state.selectedDate;
 
   monthLabel.textContent = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long' }).format(state.calendarMonth);
 
@@ -257,7 +253,7 @@ function renderCalendar() {
     const iso = toISO(dateObj);
     const cell = document.createElement('div');
     cell.className = 'calendar-cell';
-    if (iso === state.selectedCalendarDate) cell.classList.add('active');
+    if (iso === activeIso) cell.classList.add('active');
     if (iso === toISO(today)) cell.classList.add('today');
     const hasEvents = state.events.some(ev => ev.date === iso);
     const hasTasks = state.tasks.some(t => t.date === iso && !t.done);
@@ -271,11 +267,34 @@ function renderCalendar() {
     cell.addEventListener('click', () => {
       state.selectedCalendarDate = iso;
       state.selectedDate = iso;
+      state.calendarMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
       state.weekStart = startOfWeek(dateObj);
       render();
+      setCalendarPopover(false);
     });
     grid.appendChild(cell);
   }
+}
+
+function setCalendarPopover(open) {
+  const popover = document.getElementById('calendarPopover');
+  const trigger = document.getElementById('calendarTrigger');
+  if (!popover || !trigger) return;
+
+  state.isCalendarOpen = open;
+  popover.classList.toggle('open', open);
+  popover.setAttribute('aria-hidden', open ? 'false' : 'true');
+  trigger.classList.toggle('active', open);
+}
+
+function toggleCalendarPopover() {
+  const shouldOpen = !state.isCalendarOpen;
+  if (shouldOpen) {
+    const baseDate = new Date(state.selectedDate || toISO(today));
+    state.calendarMonth = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+    renderCalendar();
+  }
+  setCalendarPopover(shouldOpen);
 }
 
 function toggleTask(id, done) {
@@ -349,31 +368,54 @@ function wireEvents() {
     });
   });
 
-  document.getElementById('prevWeekInline').addEventListener('click', () => {
-    state.weekStart = addDays(state.weekStart, -7);
-    renderWeekStrips();
+  const calendarTrigger = document.getElementById('calendarTrigger');
+  if (calendarTrigger) {
+    calendarTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCalendarPopover();
+    });
+  }
+
+  const prevWeekBtn = document.getElementById('prevWeek');
+  const nextWeekBtn = document.getElementById('nextWeek');
+  if (prevWeekBtn && nextWeekBtn) {
+    prevWeekBtn.addEventListener('click', () => {
+      state.weekStart = addDays(state.weekStart, -7);
+      renderWeekStrip();
+    });
+    nextWeekBtn.addEventListener('click', () => {
+      state.weekStart = addDays(state.weekStart, 7);
+      renderWeekStrip();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    const popover = document.getElementById('calendarPopover');
+    const trigger = document.getElementById('calendarTrigger');
+    if (!popover || !trigger) return;
+    if (!state.isCalendarOpen) return;
+    if (popover.contains(e.target) || trigger.contains(e.target)) return;
+    setCalendarPopover(false);
   });
-  document.getElementById('nextWeekInline').addEventListener('click', () => {
-    state.weekStart = addDays(state.weekStart, 7);
-    renderWeekStrips();
-  });
-  document.getElementById('goCalendar').addEventListener('click', () => {
-    state.showCalendarInline = !state.showCalendarInline;
-    if (!state.showCalendarInline) {
-      state.weekStart = startOfWeek(new Date(state.selectedDate));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.isCalendarOpen) {
+      setCalendarPopover(false);
     }
-    render();
   });
+
   const prevMonthBtn = document.getElementById('prevMonth');
   const nextMonthBtn = document.getElementById('nextMonth');
   if (prevMonthBtn && nextMonthBtn) {
-    prevMonthBtn.addEventListener('click', () => {
+    prevMonthBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() - 1, 1);
-      render();
+      renderCalendar();
     });
-    nextMonthBtn.addEventListener('click', () => {
+    nextMonthBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
-      render();
+      renderCalendar();
     });
   }
 
@@ -473,54 +515,4 @@ document.addEventListener('DOMContentLoaded', () => {
   loadState();
   wireEvents();
   render();
-
-  let resizeTimer = null;
-  window.addEventListener('resize', () => {
-    if (resizeTimer) {
-      clearTimeout(resizeTimer);
-    }
-    resizeTimer = setTimeout(() => {
-      updateCalendarView();
-    }, 150);
-  });
 });
-
-function updateCalendarView() {
-  const wrapper = document.querySelector('.calendar-wrapper');
-  const inlineWeek = document.getElementById('inlineWeek');
-  const inlineCalendar = document.getElementById('calendarInline');
-  const toggle = document.getElementById('goCalendar');
-  if (!wrapper || !inlineWeek || !inlineCalendar || !toggle) return;
-
-  const isMobile = window.matchMedia('(max-width: 640px)').matches;
-
-  const targetIsMonth = state.showCalendarInline;
-  if (isMobile) {
-    wrapper.classList.toggle('month-mode', targetIsMonth);
-    inlineWeek.classList.toggle('is-active', !targetIsMonth);
-    inlineCalendar.classList.toggle('is-active', targetIsMonth);
-    toggle.classList.toggle('active-month', targetIsMonth);
-    wrapper.style.height = 'auto';
-    wrapper.style.maxHeight = 'none';
-    return;
-  }
-
-  const currentlyActive = inlineWeek.classList.contains('is-active') ? inlineWeek : inlineCalendar;
-  const currentHeight = currentlyActive.scrollHeight || wrapper.offsetHeight;
-  if (currentHeight) {
-    wrapper.style.height = `${currentHeight}px`;
-    wrapper.style.maxHeight = `${currentHeight}px`;
-  }
-
-  requestAnimationFrame(() => {
-    wrapper.classList.toggle('month-mode', targetIsMonth);
-    inlineWeek.classList.toggle('is-active', !targetIsMonth);
-    inlineCalendar.classList.toggle('is-active', targetIsMonth);
-    toggle.classList.toggle('active-month', targetIsMonth);
-
-    const targetEl = targetIsMonth ? inlineCalendar : inlineWeek;
-    const targetHeight = targetEl.scrollHeight || currentHeight;
-    wrapper.style.height = `${targetHeight}px`;
-    wrapper.style.maxHeight = `${targetHeight}px`;
-  });
-}
