@@ -290,6 +290,54 @@ body {
   font-size: 13px;
 }
 
+.item.task-item {
+  grid-template-columns: auto 1fr auto auto;
+}
+
+.task-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, box-shadow 200ms ease, transform 160ms ease;
+}
+
+.task-action-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-task-defer {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  box-shadow: none;
+  outline: none;
+  appearance: none;
+}
+
+.btn-task-defer:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-strong);
+  border-radius: 50%;
+}
+
+.btn-task-delete {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.btn-task-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
 .item.done {
   opacity: 0.45;
 }
@@ -374,6 +422,7 @@ body {
   color: #0f172a;
   border: none;
 }
+
 
 .primary-btn {
   position: relative;

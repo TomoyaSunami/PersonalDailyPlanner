@@ -186,7 +186,13 @@ function renderEventsList(container, events) {
         <p class="title">${ev.title}</p>
         ${ev.memo ? `<p class="meta">${ev.memo}</p>` : ''}
       </div>
-      <button class="chip ghost small icon-trash" data-id="${ev.id}" data-type="event" aria-label="削除" title="削除"><span class="icon-trash-symbol" aria-hidden="true"></span></button>
+      <button class="task-action-btn btn-task-delete" data-id="${ev.id}" data-type="event" aria-label="削除" title="削除">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
+      </button>
     `;
     const deleteBtn = li.querySelector('button');
     deleteBtn.addEventListener('click', (e) => {
@@ -207,14 +213,37 @@ function renderTasksList(container, tasks) {
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done));
   sorted.forEach(task => {
     const li = document.createElement('li');
-    li.className = `item ${task.done ? 'done' : ''}`;
+    li.className = `item task-item ${task.done ? 'done' : ''}`;
+    const actionButtons = task.done ? `
+      <button class="task-action-btn btn-task-delete" aria-label="削除" title="削除">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
+      </button>
+    ` : `
+      <button class="task-action-btn btn-task-defer" aria-label="翌日に延期" title="翌日に延期">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m5 18 6-6-6-6"></path>
+          <path d="m13 18 6-6-6-6"></path>
+        </svg>
+      </button>
+      <button class="task-action-btn btn-task-delete" aria-label="削除" title="削除">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
+      </button>
+    `;
     li.innerHTML = `
       <input type="checkbox" ${task.done ? 'checked' : ''} aria-label="complete task">
       <div>
         <p class="title">${task.title}</p>
         <p class="meta">${task.note || ''}</p>
       </div>
-      <button class="chip ghost small btn-task-delete icon-trash" aria-label="削除" title="削除"><span class="icon-trash-symbol" aria-hidden="true"></span></button>
+      ${actionButtons}
     `;
     const checkbox = li.querySelector('input');
     checkbox.addEventListener('click', (e) => e.stopPropagation());
@@ -224,6 +253,13 @@ function renderTasksList(container, tasks) {
       e.stopPropagation();
       deleteTask(task.id);
     });
+    if (!task.done) {
+      const deferBtn = li.querySelector('.btn-task-defer');
+      deferBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deferTask(task.id);
+      });
+    }
     li.addEventListener('click', (e) => {
       if (e.target.tagName.toLowerCase() === 'input') return;
       openTaskEditModal(task.id);
@@ -324,9 +360,22 @@ function deleteTask(id) {
   render();
 }
 
+function deferTask(id) {
+  const target = state.tasks.find(task => task.id === id);
+  if (!target) return;
+  const base = target.date ? new Date(target.date) : new Date(state.selectedDate || today);
+  const nextDayIso = toISO(addDays(base, 1));
+  state.tasks = state.tasks.map(task => task.id === id ? { ...task, date: nextDayIso } : task);
+  persistState();
+  render();
+}
+
 function openTaskModal(targetDate = null) {
   state.taskModalTargetDate = targetDate;
   document.getElementById('taskForm').reset();
+  const defaultDate = targetDate || state.selectedDate || toISO(today);
+  const dateInput = document.getElementById('taskDate');
+  if (dateInput) dateInput.value = defaultDate;
   document.getElementById('taskModal').classList.add('active');
 }
 
@@ -338,6 +387,8 @@ function openTaskEditModal(taskId) {
   form.reset();
   document.getElementById('taskEditTitle').value = target.title || '';
   document.getElementById('taskEditNote').value = target.note || '';
+  const editDateInput = document.getElementById('taskEditDate');
+  if (editDateInput) editDateInput.value = target.date || state.selectedDate || toISO(today);
   document.getElementById('taskEditModal').classList.add('active');
 }
 
@@ -439,7 +490,8 @@ function wireEvents() {
     const title = document.getElementById('taskTitle').value.trim();
     if (!title) return;
     const note = document.getElementById('taskNote').value.trim();
-    const date = state.taskModalTargetDate || state.selectedDate || toISO(today);
+    const dateInput = document.getElementById('taskDate');
+    const date = (dateInput && dateInput.value) ? dateInput.value : (state.taskModalTargetDate || state.selectedDate || toISO(today));
     state.tasks.push({
       id: uid(),
       title,
@@ -463,7 +515,8 @@ function wireEvents() {
     const title = document.getElementById('taskEditTitle').value.trim();
     if (!title) return;
     const note = document.getElementById('taskEditNote').value.trim();
-    const date = typeof existing.date !== 'undefined' ? existing.date : (state.selectedDate || toISO(today));
+    const dateInput = document.getElementById('taskEditDate');
+    const date = (dateInput && dateInput.value) ? dateInput.value : (typeof existing.date !== 'undefined' ? existing.date : (state.selectedDate || toISO(today)));
     state.tasks = state.tasks.map(task => task.id === state.editingTaskId ? {
       ...task,
       title,

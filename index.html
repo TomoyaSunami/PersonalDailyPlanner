@@ -15,7 +15,7 @@
   <main class="shell">
     <header class="hero glass-card">
       <div>
-        <p class="eyebrow">PersonalDailyPlanner</p>
+        <p class="eyebrow">Personal Daily Planner</p>
         <h1>予定とタスクを、一瞬で整理。今日を最高の一日に</h1>
         <p class="subhead">あなたの毎日の整理と効率化をサポートする、シンプルなデイリープランナーです。</p>
       </div>
@@ -91,6 +91,9 @@
         <label>タイトル
           <input type="text" id="taskTitle" required placeholder="タイトルを入力">
         </label>
+        <label>日付
+          <input type="date" id="taskDate" required>
+        </label>
         <label>メモ（任意）
           <textarea id="taskNote" placeholder="メモを入力"></textarea>
         </label>
@@ -136,6 +139,9 @@
       <form id="taskEditForm">
         <label>タイトル
           <input type="text" id="taskEditTitle" required placeholder="タイトルを入力">
+        </label>
+        <label>日付
+          <input type="date" id="taskEditDate" required>
         </label>
         <label>メモ（任意）
           <textarea id="taskEditNote" placeholder="メモを入力"></textarea>
