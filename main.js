@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'dayflow-data';
+const UNDO_DURATION = 4000;
 const today = new Date();
 
 function uid() {
@@ -18,6 +19,9 @@ const state = {
   editingEventId: null,
   isCalendarOpen: false
 };
+
+let undoTimer = null;
+let pendingUndoHandler = null;
 
 function startOfWeek(date) {
   const d = new Date(date);
@@ -98,6 +102,44 @@ function persistState() {
     tasks: state.tasks,
     events: state.events
   }));
+}
+
+function hideSnackbar() {
+  const snackbar = document.getElementById('undoSnackbar');
+  const undoBtn = document.getElementById('snackbarUndo');
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+  pendingUndoHandler = null;
+  if (undoBtn) {
+    undoBtn.onclick = null;
+  }
+  if (snackbar) {
+    snackbar.classList.remove('visible');
+  }
+}
+
+function showUndoSnackbar(message, onUndo) {
+  const snackbar = document.getElementById('undoSnackbar');
+  const messageEl = document.getElementById('snackbarMessage');
+  const undoBtn = document.getElementById('snackbarUndo');
+  if (!snackbar || !messageEl || !undoBtn) return;
+
+  // Replace any pending undo with the latest action
+  hideSnackbar();
+  messageEl.textContent = message;
+  pendingUndoHandler = onUndo;
+
+  undoBtn.onclick = () => {
+    if (pendingUndoHandler) pendingUndoHandler();
+    hideSnackbar();
+  };
+
+  snackbar.classList.add('visible');
+  undoTimer = setTimeout(() => {
+    hideSnackbar();
+  }, UNDO_DURATION);
 }
 
 function render() {
@@ -349,15 +391,29 @@ function toggleTask(id, done) {
 }
 
 function deleteEvent(id) {
+  const target = state.events.find(ev => ev.id === id);
+  if (!target) return;
   state.events = state.events.filter(ev => ev.id !== id);
   persistState();
   render();
+  showUndoSnackbar('予定を削除しました', () => {
+    state.events = [...state.events, target];
+    persistState();
+    render();
+  });
 }
 
 function deleteTask(id) {
+  const target = state.tasks.find(task => task.id === id);
+  if (!target) return;
   state.tasks = state.tasks.filter(task => task.id !== id);
   persistState();
   render();
+  showUndoSnackbar('タスクを削除しました', () => {
+    state.tasks = [...state.tasks, target];
+    persistState();
+    render();
+  });
 }
 
 function deferTask(id) {

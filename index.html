@@ -121,7 +121,7 @@
           <input type="time" id="eventTime">
         </label>
         <label>メモ（任意）
-          <textarea id="eventMemo" placeholder="Zoom"></textarea>
+          <textarea id="eventMemo" placeholder="メモを入力"></textarea>
         </label>
         <div class="modal-actions">
           <button type="submit" class="primary-btn full">保存</button>
@@ -170,12 +170,19 @@
           <input type="time" id="eventEditTime">
         </label>
         <label>メモ（任意）
-          <textarea id="eventEditMemo" placeholder="Zoom"></textarea>
+          <textarea id="eventEditMemo" placeholder="メモを入力"></textarea>
         </label>
         <div class="modal-actions">
           <button type="submit" class="primary-btn full">更新</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="snackbar" id="undoSnackbar" role="status" aria-live="polite" aria-atomic="true">
+    <div class="snackbar-body">
+      <span id="snackbarMessage"></span>
+      <button class="snackbar-undo" id="snackbarUndo" type="button">元に戻す</button>
     </div>
   </div>
 
