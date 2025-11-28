@@ -623,12 +623,22 @@ body {
   color: var(--accent-strong);
 }
 
+.day-chip.active:hover {
+  background: rgba(99, 102, 241, 0.12); /* keep active bg */
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
 .day-chip.today {
   border-color: rgba(14, 165, 233, 0.7);
   border-width: 2px;
   box-shadow: none;
   background: rgba(14, 165, 233, 0.08);
   border-style: solid;
+}
+
+.day-chip.today.active,
+.day-chip.today.active:hover {
+  background: rgba(99, 102, 241, 0.12);
 }
 
 .day-chip.today:hover {
@@ -761,6 +771,10 @@ body {
   background: rgba(255, 255, 255, 0.55);
 }
 
+.calendar-cell.today.active {
+  background: rgba(99, 102, 241, 0.12);
+}
+
 .calendar-cell.active:hover {
   transform: translateY(-1px);
   background: rgba(99, 102, 241, 0.12); /* keep active bg */
@@ -775,7 +789,7 @@ body {
 
 .calendar-cell.active.today:hover {
   transform: translateY(-1px);
-  background: rgba(99, 102, 241, 0.12); /* keep active bg */
+  background: rgba(99, 102, 241, 0.12) !important; /* keep active bg */
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(99, 102, 241, 0.3);
 }
 
