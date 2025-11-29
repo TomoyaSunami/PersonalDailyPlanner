@@ -68,7 +68,7 @@ function formatLongDate(date) {
 
 function stylizeDateUnits(text) {
   if (!text) return '';
-  return String(text).replace(/([年月日])/g, '<span class="date-unit">$1</span>');
+  return String(text).replace(/(\d)([年月日])/g, (_, num, unit) => `${num}<span class="date-unit">${unit}</span>`);
 }
 
 function loadState() {
