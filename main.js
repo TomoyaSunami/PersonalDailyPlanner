@@ -187,7 +187,7 @@ function renderWeekStrip() {
   strip.innerHTML = '';
   const start = state.weekStart;
   const end = addDays(start, 6);
-  range.innerHTML = stylizeDateUnits(`${formatFixedDate(start)} 〜 ${formatFixedDate(end)}`);
+  range.innerHTML = `${stylizeDateUnits(formatFixedDate(start))} <span class="range-separator">〜</span> ${stylizeDateUnits(formatFixedDate(end))}`;
 
   const todayIso = toISO(today);
   const activeIso = state.selectedDate;
@@ -640,15 +640,22 @@ function wireEvents() {
 
 function setWeekRangeWidth() {
   const el = document.getElementById('weekRange');
-  if (!el) return;
+  if (!el || !document.body) return;
+  const sample = `${stylizeDateUnits('0000年00月00日')} <span class="range-separator">〜</span> ${stylizeDateUnits('0000年00月00日')}`; // 想定される最長テキスト（左右固定幅）
   const style = window.getComputedStyle(el);
-  const font = style.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-  const sample = '0000年00月00日 〜 0000年00月00日'; // 想定される最長テキスト（左右固定幅）
-  const canvas = setWeekRangeWidth.canvas || (setWeekRangeWidth.canvas = document.createElement('canvas'));
-  const ctx = canvas.getContext('2d');
-  ctx.font = font;
-  const padding = Number.parseFloat(style.paddingLeft || 0) + Number.parseFloat(style.paddingRight || 0);
-  const width = Math.ceil(ctx.measureText(sample).width + padding);
+  const ghost = document.createElement('span');
+  ghost.className = el.className;
+  ghost.style.position = 'absolute';
+  ghost.style.visibility = 'hidden';
+  ghost.style.whiteSpace = 'nowrap';
+  ghost.style.boxSizing = style.boxSizing;
+  ghost.style.padding = style.padding;
+  ghost.style.border = style.border;
+  ghost.style.font = style.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  ghost.innerHTML = sample;
+  document.body.appendChild(ghost);
+  const width = Math.ceil(ghost.getBoundingClientRect().width);
+  document.body.removeChild(ghost);
   el.style.width = `${width}px`;
   el.style.display = 'inline-block';
 }

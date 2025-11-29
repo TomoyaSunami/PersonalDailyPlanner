@@ -558,6 +558,10 @@ body {
 }
 
 .date-unit {
+  font-size: 0.65em;
+}
+
+.range-separator {
   font-size: 0.75em;
 }
 
@@ -570,6 +574,10 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.week-controls .icon-btn {
+  padding: 8px 6px;
 }
 
 .week-controls .icon-btn:hover {
