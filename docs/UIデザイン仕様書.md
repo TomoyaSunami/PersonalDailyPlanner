@@ -1,4 +1,4 @@
-# PersonalDaylyPlanner UI デザインシステム仕様書
+# Daily Canvas UI デザインシステム仕様書
 
 ## 1. デザインコンセプト
 

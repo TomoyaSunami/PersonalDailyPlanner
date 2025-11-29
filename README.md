@@ -1,4 +1,4 @@
-# PersonalDaylyPlanner
+# Daily Canvas
 
 シンプルなデイリープランナーのスタティックサイトです。`index.html`・`style.css`・`main.js`だけで動くのでビルド不要でそのまま配信できます。
 
