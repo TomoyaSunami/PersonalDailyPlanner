@@ -557,6 +557,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.date-unit {
+  font-size: 0.75em;
+}
+
 .week-strip-row {
   margin: 10px 0 6px;
 }

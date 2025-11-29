@@ -66,6 +66,11 @@ function formatLongDate(date) {
   return `${base}(${weekday})`;
 }
 
+function stylizeDateUnits(text) {
+  if (!text) return '';
+  return String(text).replace(/([年月日])/g, '<span class="date-unit">$1</span>');
+}
+
 function loadState() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
@@ -154,7 +159,11 @@ function renderToday() {
   const selectedIso = state.selectedDate || toISO(today);
   const todayIso = toISO(today);
   const labelText = selectedIso === todayIso ? '今日' : formatLongDate(selectedIso);
-  todayLabel.textContent = labelText;
+  if (labelText === '今日') {
+    todayLabel.textContent = labelText;
+  } else {
+    todayLabel.innerHTML = stylizeDateUnits(labelText);
+  }
   document.getElementById('eventsTitle').textContent = '予定';
   document.getElementById('tasksTitle').textContent = 'タスク';
 
@@ -178,7 +187,7 @@ function renderWeekStrip() {
   strip.innerHTML = '';
   const start = state.weekStart;
   const end = addDays(start, 6);
-  range.textContent = `${formatFixedDate(start)} 〜 ${formatFixedDate(end)}`;
+  range.innerHTML = stylizeDateUnits(`${formatFixedDate(start)} 〜 ${formatFixedDate(end)}`);
 
   const todayIso = toISO(today);
   const activeIso = state.selectedDate;
@@ -316,7 +325,7 @@ function renderCalendar() {
   if (!monthLabel || !grid) return;
   const activeIso = state.selectedCalendarDate || state.selectedDate;
 
-  monthLabel.textContent = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long' }).format(state.calendarMonth);
+  monthLabel.innerHTML = stylizeDateUnits(new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long' }).format(state.calendarMonth));
 
   grid.innerHTML = '';
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
