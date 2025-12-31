@@ -73,6 +73,8 @@ body {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .hero .brand-mark {
@@ -84,7 +86,7 @@ body {
 
 .hero .brand-wordmark {
   height: 60px;
-  max-width: 70vw;
+  max-width: 100%;
   width: auto;
   display: block;
 }

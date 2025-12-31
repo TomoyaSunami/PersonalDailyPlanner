@@ -615,16 +615,17 @@ function wireEvents() {
   document.getElementById('eventEditForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!state.editingEventId) return;
-    const title = document.getElementById('eventEditTitle').value.trim();
-    if (!title) return;
-    const date = document.getElementById('eventEditDate').value || toISO(today);
-    const time = document.getElementById('eventEditTime').value;
-    const memo = document.getElementById('eventEditMemo').value.trim();
-    const exists = state.events.some(ev => ev.id === state.editingEventId);
-    if (!exists) {
+    const existing = state.events.find(ev => ev.id === state.editingEventId);
+    if (!existing) {
       closeModal('eventEditModal');
       return;
     }
+    const title = document.getElementById('eventEditTitle').value.trim();
+    if (!title) return;
+    const dateInput = document.getElementById('eventEditDate');
+    const date = (dateInput && dateInput.value) ? dateInput.value : (existing.date || toISO(today));
+    const time = document.getElementById('eventEditTime').value;
+    const memo = document.getElementById('eventEditMemo').value.trim();
     state.events = state.events.map(ev => ev.id === state.editingEventId ? {
       ...ev,
       title,
