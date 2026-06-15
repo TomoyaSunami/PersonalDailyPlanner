@@ -661,10 +661,20 @@ function setWeekRangeWidth() {
   el.style.display = 'inline-block';
 }
 
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (!window.isSecureContext && window.location.hostname !== 'localhost') return;
+
+  navigator.serviceWorker.register('./sw.js').catch((error) => {
+    console.warn('service worker registration failed', error);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   wireEvents();
   render();
+  registerServiceWorker();
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(setWeekRangeWidth).catch(() => {});
   }
