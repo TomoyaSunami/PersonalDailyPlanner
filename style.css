@@ -905,6 +905,8 @@ body {
 
 form label {
   display: block;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 10px;
   font-weight: 600;
 }
@@ -913,7 +915,10 @@ input[type="text"],
 input[type="date"],
 input[type="time"],
 textarea {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 6px;
   padding: 12px 14px;
   border-radius: 14px;
@@ -923,6 +928,11 @@ textarea {
   font-size: 14px;
   font-family: inherit;
   transition: all 200ms ease;
+}
+
+input[type="date"],
+input[type="time"] {
+  min-inline-size: 0;
 }
 
 input:focus,
