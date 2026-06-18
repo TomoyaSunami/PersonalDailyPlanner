@@ -1,12 +1,66 @@
+import './style.css';
+
 const STORAGE_KEY = 'dayflow-data';
 const UNDO_DURATION = 4000;
 const today = new Date();
 
-function uid() {
+type ISODate = string;
+
+type Task = {
+  id: string;
+  title: string;
+  note?: string;
+  date?: ISODate;
+  due?: 'today' | 'tomorrow';
+  done: boolean;
+};
+
+type CalendarEvent = {
+  id: string;
+  title: string;
+  date: ISODate;
+  time?: string;
+  memo?: string;
+};
+
+type AppState = {
+  tasks: Task[];
+  events: CalendarEvent[];
+  selectedDate: ISODate;
+  selectedCalendarDate: ISODate;
+  weekStart: Date;
+  calendarMonth: Date;
+  taskModalTargetDate: ISODate | null;
+  eventModalDate: ISODate;
+  editingTaskId: string | null;
+  editingEventId: string | null;
+  isCalendarOpen: boolean;
+};
+
+type StoredState = {
+  tasks?: Task[];
+  events?: CalendarEvent[];
+};
+
+type UndoHandler = () => void;
+
+function byId<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Missing required element: #${id}`);
+  }
+  return element as T;
+}
+
+function maybeById<T extends HTMLElement>(id: string): T | null {
+  return document.getElementById(id) as T | null;
+}
+
+function uid(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-const state = {
+const state: AppState = {
   tasks: [],
   events: [],
   selectedDate: toISO(today),
@@ -20,10 +74,10 @@ const state = {
   isCalendarOpen: false
 };
 
-let undoTimer = null;
-let pendingUndoHandler = null;
+let undoTimer: ReturnType<typeof window.setTimeout> | null = null;
+let pendingUndoHandler: UndoHandler | null = null;
 
-function startOfWeek(date) {
+function startOfWeek(date: Date | ISODate): Date {
   const d = new Date(date);
   const day = d.getDay(); // 0 = Sun
   d.setDate(d.getDate() - day);
@@ -31,13 +85,13 @@ function startOfWeek(date) {
   return d;
 }
 
-function addDays(base, days) {
+function addDays(base: Date | ISODate, days: number): Date {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
   return d;
 }
 
-function toISO(date) {
+function toISO(date: Date | ISODate): ISODate {
   const d = new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -45,7 +99,7 @@ function toISO(date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatFixedDate(date) {
+function formatFixedDate(date: Date | ISODate): string {
   const d = new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -53,7 +107,7 @@ function formatFixedDate(date) {
   return `${year}年${month}月${day}日`;
 }
 
-function formatLongDate(date) {
+function formatLongDate(date: Date | ISODate): string {
   const dt = new Date(date);
   const base = new Intl.DateTimeFormat('ja-JP', {
     year: 'numeric',
@@ -66,7 +120,7 @@ function formatLongDate(date) {
   return `${base}(${weekday})`;
 }
 
-function stylizeDateUnits(text) {
+function stylizeDateUnits(text: string): string {
   if (!text) return '';
   return String(text).replace(/(\d)([年月日])/g, (_, num, unit) => `${num}<span class="date-unit">${unit}</span>`);
 }
@@ -75,7 +129,7 @@ function loadState() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
-      const data = JSON.parse(stored);
+      const data = JSON.parse(stored) as StoredState;
       state.tasks = data.tasks || [];
       state.events = data.events || [];
       return;
@@ -110,8 +164,8 @@ function persistState() {
 }
 
 function hideSnackbar() {
-  const snackbar = document.getElementById('undoSnackbar');
-  const undoBtn = document.getElementById('snackbarUndo');
+  const snackbar = maybeById('undoSnackbar');
+  const undoBtn = maybeById<HTMLButtonElement>('snackbarUndo');
   if (undoTimer) {
     clearTimeout(undoTimer);
     undoTimer = null;
@@ -125,10 +179,10 @@ function hideSnackbar() {
   }
 }
 
-function showUndoSnackbar(message, onUndo) {
-  const snackbar = document.getElementById('undoSnackbar');
-  const messageEl = document.getElementById('snackbarMessage');
-  const undoBtn = document.getElementById('snackbarUndo');
+function showUndoSnackbar(message: string, onUndo: UndoHandler) {
+  const snackbar = maybeById('undoSnackbar');
+  const messageEl = maybeById('snackbarMessage');
+  const undoBtn = maybeById<HTMLButtonElement>('snackbarUndo');
   if (!snackbar || !messageEl || !undoBtn) return;
 
   // Replace any pending undo with the latest action
@@ -155,7 +209,7 @@ function render() {
 }
 
 function renderToday() {
-  const todayLabel = document.getElementById('todayLabel');
+  const todayLabel = byId('todayLabel');
   const selectedIso = state.selectedDate || toISO(today);
   const todayIso = toISO(today);
   const labelText = selectedIso === todayIso ? '今日' : formatLongDate(selectedIso);
@@ -164,24 +218,24 @@ function renderToday() {
   } else {
     todayLabel.innerHTML = stylizeDateUnits(labelText);
   }
-  document.getElementById('eventsTitle').textContent = '予定';
-  document.getElementById('tasksTitle').textContent = 'タスク';
+  byId('eventsTitle').textContent = '予定';
+  byId('tasksTitle').textContent = 'タスク';
 
   const dayEvents = state.events.filter(ev => ev.date === selectedIso);
   const dayTasks = state.tasks.filter(task => (task.date ? task.date === selectedIso : true));
 
-  renderEventsList(document.getElementById('todayEvents'), dayEvents);
+  renderEventsList(byId('todayEvents'), dayEvents);
 
-  const taskList = document.getElementById('todayTasks');
+  const taskList = byId('todayTasks');
   renderTasksList(taskList, dayTasks);
-  const progress = document.getElementById('taskProgress');
+  const progress = byId('taskProgress');
   const doneCount = dayTasks.filter(t => t.done).length;
   progress.textContent = `${doneCount}/${dayTasks.length} 完了`;
 }
 
 function renderWeekStrip() {
-  const strip = document.getElementById('weekStrip');
-  const range = document.getElementById('weekRange');
+  const strip = maybeById('weekStrip');
+  const range = maybeById('weekRange');
   if (!strip || !range) return;
 
   strip.innerHTML = '';
@@ -220,7 +274,7 @@ function renderWeekStrip() {
   }
 }
 
-function renderEventsList(container, events) {
+function renderEventsList(container: HTMLElement, events: CalendarEvent[]) {
   container.innerHTML = '';
   if (!events.length) {
     container.innerHTML = '<li class="muted">予定はありません</li>';
@@ -246,6 +300,7 @@ function renderEventsList(container, events) {
       </button>
     `;
     const deleteBtn = li.querySelector('button');
+    if (!deleteBtn) return;
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       deleteEvent(ev.id);
@@ -255,7 +310,7 @@ function renderEventsList(container, events) {
   });
 }
 
-function renderTasksList(container, tasks) {
+function renderTasksList(container: HTMLElement, tasks: Task[]) {
   container.innerHTML = '';
   if (!tasks.length) {
     container.innerHTML = '<li class="muted">タスクはありません</li>';
@@ -297,22 +352,26 @@ function renderTasksList(container, tasks) {
       ${actionButtons}
     `;
     const checkbox = li.querySelector('input');
+    if (!checkbox) return;
     checkbox.addEventListener('click', (e) => e.stopPropagation());
-    checkbox.addEventListener('change', (e) => toggleTask(task.id, e.target.checked));
+    checkbox.addEventListener('change', (e) => toggleTask(task.id, (e.target as HTMLInputElement).checked));
     const deleteBtn = li.querySelector('.btn-task-delete');
+    if (!deleteBtn) return;
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       deleteTask(task.id);
     });
     if (!task.done) {
       const deferBtn = li.querySelector('.btn-task-defer');
+      if (!deferBtn) return;
       deferBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         deferTask(task.id);
       });
     }
     li.addEventListener('click', (e) => {
-      if (e.target.tagName.toLowerCase() === 'input') return;
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'input') return;
       openTaskEditModal(task.id);
     });
     container.appendChild(li);
@@ -320,8 +379,8 @@ function renderTasksList(container, tasks) {
 }
 
 function renderCalendar() {
-  const monthLabel = document.getElementById('monthLabel');
-  const grid = document.getElementById('calendarGrid');
+  const monthLabel = maybeById('monthLabel');
+  const grid = maybeById('calendarGrid');
   if (!monthLabel || !grid) return;
   const activeIso = state.selectedCalendarDate || state.selectedDate;
 
@@ -372,9 +431,9 @@ function renderCalendar() {
   }
 }
 
-function setCalendarPopover(open) {
-  const popover = document.getElementById('calendarPopover');
-  const trigger = document.getElementById('calendarTrigger');
+function setCalendarPopover(open: boolean) {
+  const popover = maybeById('calendarPopover');
+  const trigger = maybeById('calendarTrigger');
   if (!popover || !trigger) return;
 
   state.isCalendarOpen = open;
@@ -393,13 +452,13 @@ function toggleCalendarPopover() {
   setCalendarPopover(shouldOpen);
 }
 
-function toggleTask(id, done) {
+function toggleTask(id: string, done: boolean) {
   state.tasks = state.tasks.map(task => task.id === id ? { ...task, done } : task);
   persistState();
   render();
 }
 
-function deleteEvent(id) {
+function deleteEvent(id: string) {
   const target = state.events.find(ev => ev.id === id);
   if (!target) return;
   state.events = state.events.filter(ev => ev.id !== id);
@@ -412,7 +471,7 @@ function deleteEvent(id) {
   });
 }
 
-function deleteTask(id) {
+function deleteTask(id: string) {
   const target = state.tasks.find(task => task.id === id);
   if (!target) return;
   state.tasks = state.tasks.filter(task => task.id !== id);
@@ -425,7 +484,7 @@ function deleteTask(id) {
   });
 }
 
-function deferTask(id) {
+function deferTask(id: string) {
   const target = state.tasks.find(task => task.id === id);
   if (!target) return;
   const base = target.date ? new Date(target.date) : new Date(state.selectedDate || today);
@@ -435,50 +494,50 @@ function deferTask(id) {
   render();
 }
 
-function openTaskModal(targetDate = null) {
+function openTaskModal(targetDate: ISODate | null = null) {
   state.taskModalTargetDate = targetDate;
-  document.getElementById('taskForm').reset();
+  byId<HTMLFormElement>('taskForm').reset();
   const defaultDate = targetDate || state.selectedDate || toISO(today);
-  const dateInput = document.getElementById('taskDate');
+  const dateInput = maybeById<HTMLInputElement>('taskDate');
   if (dateInput) dateInput.value = defaultDate;
-  document.getElementById('taskModal').classList.add('active');
+  byId('taskModal').classList.add('active');
 }
 
-function openTaskEditModal(taskId) {
+function openTaskEditModal(taskId: string) {
   const target = state.tasks.find(t => t.id === taskId);
   if (!target) return;
   state.editingTaskId = taskId;
-  const form = document.getElementById('taskEditForm');
+  const form = byId<HTMLFormElement>('taskEditForm');
   form.reset();
-  document.getElementById('taskEditTitle').value = target.title || '';
-  document.getElementById('taskEditNote').value = target.note || '';
-  const editDateInput = document.getElementById('taskEditDate');
+  byId<HTMLInputElement>('taskEditTitle').value = target.title || '';
+  byId<HTMLTextAreaElement>('taskEditNote').value = target.note || '';
+  const editDateInput = maybeById<HTMLInputElement>('taskEditDate');
   if (editDateInput) editDateInput.value = target.date || state.selectedDate || toISO(today);
-  document.getElementById('taskEditModal').classList.add('active');
+  byId('taskEditModal').classList.add('active');
 }
 
-function openEventModal(date = toISO(new Date())) {
+function openEventModal(date: ISODate = toISO(new Date())) {
   state.eventModalDate = date;
-  document.getElementById('eventForm').reset();
-  document.getElementById('eventDate').value = date;
-  document.getElementById('eventModal').classList.add('active');
+  byId<HTMLFormElement>('eventForm').reset();
+  byId<HTMLInputElement>('eventDate').value = date;
+  byId('eventModal').classList.add('active');
 }
 
-function openEventEditModal(eventId) {
+function openEventEditModal(eventId: string) {
   const target = state.events.find(ev => ev.id === eventId);
   if (!target) return;
   state.editingEventId = eventId;
-  const form = document.getElementById('eventEditForm');
+  const form = byId<HTMLFormElement>('eventEditForm');
   form.reset();
-  document.getElementById('eventEditTitle').value = target.title || '';
-  document.getElementById('eventEditDate').value = target.date || toISO(today);
-  document.getElementById('eventEditTime').value = target.time || '';
-  document.getElementById('eventEditMemo').value = target.memo || '';
-  document.getElementById('eventEditModal').classList.add('active');
+  byId<HTMLInputElement>('eventEditTitle').value = target.title || '';
+  byId<HTMLInputElement>('eventEditDate').value = target.date || toISO(today);
+  byId<HTMLInputElement>('eventEditTime').value = target.time || '';
+  byId<HTMLTextAreaElement>('eventEditMemo').value = target.memo || '';
+  byId('eventEditModal').classList.add('active');
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('active');
+function closeModal(id: string) {
+  byId(id).classList.remove('active');
   state.taskModalTargetDate = null;
   state.editingTaskId = null;
   state.editingEventId = null;
@@ -487,13 +546,15 @@ function closeModal(id) {
 function wireEvents() {
   document.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const section = document.querySelector(`.collapsible[data-section="${btn.dataset.toggle}"]`);
+      const toggleTarget = (btn as HTMLElement).dataset.toggle;
+      const section = document.querySelector(`.collapsible[data-section="${toggleTarget}"]`);
+      if (!section) return;
       const collapsed = section.classList.toggle('collapsed');
       btn.textContent = collapsed ? '▸' : '▾';
     });
   });
 
-  const calendarTrigger = document.getElementById('calendarTrigger');
+  const calendarTrigger = maybeById('calendarTrigger');
   if (calendarTrigger) {
     calendarTrigger.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -501,8 +562,8 @@ function wireEvents() {
     });
   }
 
-  const prevWeekBtn = document.getElementById('prevWeek');
-  const nextWeekBtn = document.getElementById('nextWeek');
+  const prevWeekBtn = maybeById('prevWeek');
+  const nextWeekBtn = maybeById('nextWeek');
   if (prevWeekBtn && nextWeekBtn) {
     prevWeekBtn.addEventListener('click', () => {
       state.weekStart = addDays(state.weekStart, -7);
@@ -515,11 +576,12 @@ function wireEvents() {
   }
 
   document.addEventListener('click', (e) => {
-    const popover = document.getElementById('calendarPopover');
-    const trigger = document.getElementById('calendarTrigger');
+    const popover = maybeById('calendarPopover');
+    const trigger = maybeById('calendarTrigger');
     if (!popover || !trigger) return;
     if (!state.isCalendarOpen) return;
-    if (popover.contains(e.target) || trigger.contains(e.target)) return;
+    const target = e.target as Node;
+    if (popover.contains(target) || trigger.contains(target)) return;
     setCalendarPopover(false);
   });
 
@@ -529,8 +591,8 @@ function wireEvents() {
     }
   });
 
-  const prevMonthBtn = document.getElementById('prevMonth');
-  const nextMonthBtn = document.getElementById('nextMonth');
+  const prevMonthBtn = maybeById('prevMonth');
+  const nextMonthBtn = maybeById('nextMonth');
   if (prevMonthBtn && nextMonthBtn) {
     prevMonthBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -544,18 +606,21 @@ function wireEvents() {
     });
   }
 
-  document.getElementById('addTaskToday').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
-  document.getElementById('addEventToday').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
+  byId('addTaskToday').addEventListener('click', () => openTaskModal(state.selectedDate || toISO(today)));
+  byId('addEventToday').addEventListener('click', () => openEventModal(state.selectedDate || toISO(today)));
   document.querySelectorAll('[data-close]').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    btn.addEventListener('click', () => {
+      const modalId = (btn as HTMLElement).dataset.close;
+      if (modalId) closeModal(modalId);
+    });
   });
 
-  document.getElementById('taskForm').addEventListener('submit', (e) => {
+  byId<HTMLFormElement>('taskForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const title = document.getElementById('taskTitle').value.trim();
+    const title = byId<HTMLInputElement>('taskTitle').value.trim();
     if (!title) return;
-    const note = document.getElementById('taskNote').value.trim();
-    const dateInput = document.getElementById('taskDate');
+    const note = byId<HTMLTextAreaElement>('taskNote').value.trim();
+    const dateInput = maybeById<HTMLInputElement>('taskDate');
     const date = (dateInput && dateInput.value) ? dateInput.value : (state.taskModalTargetDate || state.selectedDate || toISO(today));
     state.tasks.push({
       id: uid(),
@@ -569,7 +634,7 @@ function wireEvents() {
     render();
   });
 
-  document.getElementById('taskEditForm').addEventListener('submit', (e) => {
+  byId<HTMLFormElement>('taskEditForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!state.editingTaskId) return;
     const existing = state.tasks.find(task => task.id === state.editingTaskId);
@@ -577,10 +642,10 @@ function wireEvents() {
       closeModal('taskEditModal');
       return;
     }
-    const title = document.getElementById('taskEditTitle').value.trim();
+    const title = byId<HTMLInputElement>('taskEditTitle').value.trim();
     if (!title) return;
-    const note = document.getElementById('taskEditNote').value.trim();
-    const dateInput = document.getElementById('taskEditDate');
+    const note = byId<HTMLTextAreaElement>('taskEditNote').value.trim();
+    const dateInput = maybeById<HTMLInputElement>('taskEditDate');
     const date = (dateInput && dateInput.value) ? dateInput.value : (typeof existing.date !== 'undefined' ? existing.date : (state.selectedDate || toISO(today)));
     state.tasks = state.tasks.map(task => task.id === state.editingTaskId ? {
       ...task,
@@ -593,13 +658,13 @@ function wireEvents() {
     render();
   });
 
-  document.getElementById('eventForm').addEventListener('submit', (e) => {
+  byId<HTMLFormElement>('eventForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const title = document.getElementById('eventTitle').value.trim();
+    const title = byId<HTMLInputElement>('eventTitle').value.trim();
     if (!title) return;
-    const date = document.getElementById('eventDate').value || state.eventModalDate || toISO(today);
-    const time = document.getElementById('eventTime').value;
-    const memo = document.getElementById('eventMemo').value.trim();
+    const date = byId<HTMLInputElement>('eventDate').value || state.eventModalDate || toISO(today);
+    const time = byId<HTMLInputElement>('eventTime').value;
+    const memo = byId<HTMLTextAreaElement>('eventMemo').value.trim();
     state.events.push({
       id: uid(),
       title,
@@ -612,7 +677,7 @@ function wireEvents() {
     render();
   });
 
-  document.getElementById('eventEditForm').addEventListener('submit', (e) => {
+  byId<HTMLFormElement>('eventEditForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!state.editingEventId) return;
     const existing = state.events.find(ev => ev.id === state.editingEventId);
@@ -620,12 +685,12 @@ function wireEvents() {
       closeModal('eventEditModal');
       return;
     }
-    const title = document.getElementById('eventEditTitle').value.trim();
+    const title = byId<HTMLInputElement>('eventEditTitle').value.trim();
     if (!title) return;
-    const dateInput = document.getElementById('eventEditDate');
+    const dateInput = maybeById<HTMLInputElement>('eventEditDate');
     const date = (dateInput && dateInput.value) ? dateInput.value : (existing.date || toISO(today));
-    const time = document.getElementById('eventEditTime').value;
-    const memo = document.getElementById('eventEditMemo').value.trim();
+    const time = byId<HTMLInputElement>('eventEditTime').value;
+    const memo = byId<HTMLTextAreaElement>('eventEditMemo').value.trim();
     state.events = state.events.map(ev => ev.id === state.editingEventId ? {
       ...ev,
       title,
@@ -640,7 +705,7 @@ function wireEvents() {
 }
 
 function setWeekRangeWidth() {
-  const el = document.getElementById('weekRange');
+  const el = maybeById('weekRange');
   if (!el || !document.body) return;
   const sample = `${stylizeDateUnits('0000年00月00日')} <span class="range-separator">〜</span> ${stylizeDateUnits('0000年00月00日')}`; // 想定される最長テキスト（左右固定幅）
   const style = window.getComputedStyle(el);
@@ -662,6 +727,7 @@ function setWeekRangeWidth() {
 }
 
 function registerServiceWorker() {
+  if (!import.meta.env.PROD) return;
   if (!('serviceWorker' in navigator)) return;
   if (!window.isSecureContext && window.location.hostname !== 'localhost') return;
 

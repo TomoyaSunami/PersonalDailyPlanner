@@ -1,9 +1,7 @@
-const CACHE_NAME = 'daily-canvas-pwa-v2';
+const CACHE_NAME = 'daily-canvas-pwa-v3';
 const APP_SHELL = [
   './',
   './index.html',
-  './style.css',
-  './main.js',
   './manifest.webmanifest',
   './logo-daily-canvas.svg',
   './logo-daily-canvas-wordmark.svg',
