@@ -935,6 +935,13 @@ textarea {
   transition: all 200ms ease;
 }
 
+input[type="text"],
+input[type="date"],
+input[type="time"] {
+  min-height: 48px;
+  line-height: 1.4;
+}
+
 input[type="date"],
 input[type="time"] {
   -webkit-appearance: none;
