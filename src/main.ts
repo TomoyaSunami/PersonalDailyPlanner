@@ -2,6 +2,7 @@ import './style.css';
 
 const STORAGE_KEY = 'dayflow-data';
 const UNDO_DURATION = 4000;
+const TASK_DRAG_THRESHOLD = 6;
 const today = new Date();
 
 type ISODate = string;
@@ -44,6 +45,18 @@ type StoredState = {
 
 type UndoHandler = () => void;
 
+type TaskDragState = {
+  pointerId: number;
+  container: HTMLElement;
+  row: HTMLLIElement;
+  sourceIndex: number;
+  dropIndex: number;
+  orderedIds: string[];
+  startX: number;
+  startY: number;
+  isDragging: boolean;
+};
+
 function byId<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) {
@@ -76,6 +89,8 @@ const state: AppState = {
 
 let undoTimer: ReturnType<typeof window.setTimeout> | null = null;
 let pendingUndoHandler: UndoHandler | null = null;
+let taskDragState: TaskDragState | null = null;
+let suppressTaskClick = false;
 
 function startOfWeek(date: Date | ISODate): Date {
   const d = new Date(date);
@@ -310,6 +325,153 @@ function renderEventsList(container: HTMLElement, events: CalendarEvent[]) {
   });
 }
 
+function getReorderableTaskIds(container: HTMLElement): string[] {
+  return Array.from(container.querySelectorAll<HTMLLIElement>('.task-item[data-reorderable="true"]'))
+    .map(row => row.dataset.taskId)
+    .filter((id): id is string => Boolean(id));
+}
+
+function getTaskDropIndex(container: HTMLElement, pointerY: number): number {
+  const rows = Array.from(container.querySelectorAll<HTMLLIElement>('.task-item[data-reorderable="true"]'));
+  for (const row of rows) {
+    const rect = row.getBoundingClientRect();
+    const rowIndex = Number(row.dataset.dragIndex || 0);
+    if (pointerY < rect.top + rect.height / 2) {
+      return rowIndex;
+    }
+  }
+  return rows.length;
+}
+
+function paintTaskDropIndicator(container: HTMLElement, dropIndex: number) {
+  const rows = Array.from(container.querySelectorAll<HTMLLIElement>('.task-item[data-reorderable="true"]'));
+  rows.forEach(row => {
+    row.classList.remove('drop-before', 'drop-after');
+  });
+
+  if (!rows.length) return;
+  if (dropIndex >= rows.length) {
+    rows[rows.length - 1].classList.add('drop-after');
+    return;
+  }
+  rows[dropIndex].classList.add('drop-before');
+}
+
+function buildMovedTaskIds(ids: string[], sourceIndex: number, dropIndex: number): string[] {
+  if (sourceIndex < 0 || sourceIndex >= ids.length) return ids;
+  const next = [...ids];
+  const [movedId] = next.splice(sourceIndex, 1);
+  const adjustedIndex = sourceIndex < dropIndex ? dropIndex - 1 : dropIndex;
+  const insertIndex = Math.max(0, Math.min(adjustedIndex, next.length));
+  next.splice(insertIndex, 0, movedId);
+  return next;
+}
+
+function applyVisibleTaskOrder(orderedIds: string[]) {
+  const visibleIds = new Set(orderedIds);
+  const orderedTasks = orderedIds
+    .map(id => state.tasks.find(task => task.id === id))
+    .filter((task): task is Task => Boolean(task));
+
+  let nextVisibleIndex = 0;
+  state.tasks = state.tasks.map(task => {
+    if (!visibleIds.has(task.id)) return task;
+    const orderedTask = orderedTasks[nextVisibleIndex];
+    nextVisibleIndex += 1;
+    return orderedTask || task;
+  });
+}
+
+function cleanupTaskDrag() {
+  if (!taskDragState) return;
+  const { container, pointerId, row } = taskDragState;
+  if (row.hasPointerCapture(pointerId)) {
+    row.releasePointerCapture(pointerId);
+  }
+  row.removeEventListener('pointermove', handleTaskDragMove);
+  row.removeEventListener('pointerup', handleTaskDragEnd);
+  row.removeEventListener('pointercancel', handleTaskDragCancel);
+  row.classList.remove('dragging');
+  container.classList.remove('is-task-dragging');
+  container.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+    el.classList.remove('drop-before', 'drop-after');
+  });
+  taskDragState = null;
+}
+
+function handleTaskDragMove(event: PointerEvent) {
+  if (!taskDragState || event.pointerId !== taskDragState.pointerId) return;
+  const moveX = Math.abs(event.clientX - taskDragState.startX);
+  const moveY = Math.abs(event.clientY - taskDragState.startY);
+  if (!taskDragState.isDragging) {
+    if (Math.hypot(moveX, moveY) < TASK_DRAG_THRESHOLD) return;
+    taskDragState.isDragging = true;
+    taskDragState.row.classList.add('dragging');
+    taskDragState.container.classList.add('is-task-dragging');
+  }
+  event.preventDefault();
+  taskDragState.dropIndex = getTaskDropIndex(taskDragState.container, event.clientY);
+  paintTaskDropIndicator(taskDragState.container, taskDragState.dropIndex);
+}
+
+function handleTaskDragEnd(event: PointerEvent) {
+  if (!taskDragState || event.pointerId !== taskDragState.pointerId) return;
+  const wasDragging = taskDragState.isDragging;
+  if (wasDragging) event.preventDefault();
+
+  const { orderedIds, sourceIndex, dropIndex } = taskDragState;
+  const nextIds = buildMovedTaskIds(orderedIds, sourceIndex, dropIndex);
+  const didChange = nextIds.some((id, index) => id !== orderedIds[index]);
+  cleanupTaskDrag();
+
+  if (!wasDragging) return;
+  suppressTaskClick = true;
+  window.setTimeout(() => {
+    suppressTaskClick = false;
+  }, 0);
+
+  if (!didChange) return;
+  applyVisibleTaskOrder(nextIds);
+  persistState();
+  render();
+}
+
+function handleTaskDragCancel(event: PointerEvent) {
+  if (!taskDragState || event.pointerId !== taskDragState.pointerId) return;
+  cleanupTaskDrag();
+}
+
+function startTaskDrag(event: PointerEvent, container: HTMLElement, taskId: string, row: HTMLLIElement) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  const target = event.target as HTMLElement;
+  if (target.closest('button, input, textarea, select, a')) return;
+
+  const orderedIds = getReorderableTaskIds(container);
+  if (orderedIds.length < 2) return;
+
+  const sourceIndex = orderedIds.indexOf(taskId);
+  if (sourceIndex < 0) return;
+
+  event.stopPropagation();
+
+  taskDragState = {
+    pointerId: event.pointerId,
+    container,
+    row,
+    sourceIndex,
+    dropIndex: sourceIndex,
+    orderedIds,
+    startX: event.clientX,
+    startY: event.clientY,
+    isDragging: false
+  };
+
+  row.setPointerCapture(event.pointerId);
+  row.addEventListener('pointermove', handleTaskDragMove);
+  row.addEventListener('pointerup', handleTaskDragEnd);
+  row.addEventListener('pointercancel', handleTaskDragCancel);
+}
+
 function renderTasksList(container: HTMLElement, tasks: Task[]) {
   container.innerHTML = '';
   if (!tasks.length) {
@@ -317,9 +479,15 @@ function renderTasksList(container: HTMLElement, tasks: Task[]) {
     return;
   }
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done));
+  const reorderableIds = sorted.filter(task => !task.done).map(task => task.id);
   sorted.forEach(task => {
     const li = document.createElement('li');
     li.className = `item task-item ${task.done ? 'done' : ''}`;
+    li.dataset.taskId = task.id;
+    if (!task.done) {
+      li.dataset.reorderable = 'true';
+      li.dataset.dragIndex = String(reorderableIds.indexOf(task.id));
+    }
     const actionButtons = task.done ? `
       <button class="task-action-btn btn-task-delete" aria-label="削除" title="削除">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -355,6 +523,9 @@ function renderTasksList(container: HTMLElement, tasks: Task[]) {
     if (!checkbox) return;
     checkbox.addEventListener('click', (e) => e.stopPropagation());
     checkbox.addEventListener('change', (e) => toggleTask(task.id, (e.target as HTMLInputElement).checked));
+    if (!task.done) {
+      li.addEventListener('pointerdown', (e) => startTaskDrag(e, container, task.id, li));
+    }
     const deleteBtn = li.querySelector('.btn-task-delete');
     if (!deleteBtn) return;
     deleteBtn.addEventListener('click', (e) => {
@@ -370,8 +541,12 @@ function renderTasksList(container: HTMLElement, tasks: Task[]) {
       });
     }
     li.addEventListener('click', (e) => {
+      if (suppressTaskClick) {
+        suppressTaskClick = false;
+        return;
+      }
       const target = e.target as HTMLElement;
-      if (target.tagName.toLowerCase() === 'input') return;
+      if (target.closest('button, input, textarea, select, a')) return;
       openTaskEditModal(task.id);
     });
     container.appendChild(li);
@@ -474,11 +649,15 @@ function deleteEvent(id: string) {
 function deleteTask(id: string) {
   const target = state.tasks.find(task => task.id === id);
   if (!target) return;
+  const targetIndex = state.tasks.findIndex(task => task.id === id);
   state.tasks = state.tasks.filter(task => task.id !== id);
   persistState();
   render();
   showUndoSnackbar('タスクを削除しました', () => {
-    state.tasks = [...state.tasks, target];
+    const nextTasks = [...state.tasks];
+    const insertIndex = Math.max(0, Math.min(targetIndex, nextTasks.length));
+    nextTasks.splice(insertIndex, 0, target);
+    state.tasks = nextTasks;
     persistState();
     render();
   });
