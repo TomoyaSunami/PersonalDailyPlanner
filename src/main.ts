@@ -3,6 +3,7 @@ import './style.css';
 const STORAGE_KEY = 'dayflow-data';
 const UNDO_DURATION = 4000;
 const TASK_DRAG_THRESHOLD = 6;
+const TASK_DRAG_LONG_PRESS_MS = 450;
 const today = new Date();
 
 type ISODate = string;
@@ -54,7 +55,9 @@ type TaskDragState = {
   orderedIds: string[];
   startX: number;
   startY: number;
+  hasLongPressed: boolean;
   isDragging: boolean;
+  longPressTimer: ReturnType<typeof window.setTimeout> | null;
 };
 
 function byId<T extends HTMLElement>(id: string): T {
@@ -91,6 +94,7 @@ let undoTimer: ReturnType<typeof window.setTimeout> | null = null;
 let pendingUndoHandler: UndoHandler | null = null;
 let taskDragState: TaskDragState | null = null;
 let suppressTaskClick = false;
+let suppressTaskClickTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 function startOfWeek(date: Date | ISODate): Date {
   const d = new Date(date);
@@ -367,6 +371,17 @@ function buildMovedTaskIds(ids: string[], sourceIndex: number, dropIndex: number
   return next;
 }
 
+function suppressNextTaskClick(duration = 250) {
+  suppressTaskClick = true;
+  if (suppressTaskClickTimer) {
+    clearTimeout(suppressTaskClickTimer);
+  }
+  suppressTaskClickTimer = window.setTimeout(() => {
+    suppressTaskClick = false;
+    suppressTaskClickTimer = null;
+  }, duration);
+}
+
 function applyVisibleTaskOrder(orderedIds: string[]) {
   const visibleIds = new Set(orderedIds);
   const orderedTasks = orderedIds
@@ -385,13 +400,16 @@ function applyVisibleTaskOrder(orderedIds: string[]) {
 function cleanupTaskDrag() {
   if (!taskDragState) return;
   const { container, pointerId, row } = taskDragState;
+  if (taskDragState.longPressTimer) {
+    clearTimeout(taskDragState.longPressTimer);
+  }
   if (row.hasPointerCapture(pointerId)) {
     row.releasePointerCapture(pointerId);
   }
   row.removeEventListener('pointermove', handleTaskDragMove);
   row.removeEventListener('pointerup', handleTaskDragEnd);
   row.removeEventListener('pointercancel', handleTaskDragCancel);
-  row.classList.remove('dragging');
+  row.classList.remove('drag-ready', 'dragging');
   container.classList.remove('is-task-dragging');
   container.querySelectorAll('.drop-before, .drop-after').forEach(el => {
     el.classList.remove('drop-before', 'drop-after');
@@ -399,13 +417,30 @@ function cleanupTaskDrag() {
   taskDragState = null;
 }
 
+function activateTaskLongPressDrag(pointerId: number) {
+  if (!taskDragState || taskDragState.pointerId !== pointerId) return;
+  taskDragState.longPressTimer = null;
+  taskDragState.hasLongPressed = true;
+  taskDragState.row.classList.add('drag-ready');
+}
+
 function handleTaskDragMove(event: PointerEvent) {
   if (!taskDragState || event.pointerId !== taskDragState.pointerId) return;
   const moveX = Math.abs(event.clientX - taskDragState.startX);
   const moveY = Math.abs(event.clientY - taskDragState.startY);
+
+  if (!taskDragState.hasLongPressed) {
+    if (Math.hypot(moveX, moveY) >= TASK_DRAG_THRESHOLD) {
+      suppressNextTaskClick();
+      cleanupTaskDrag();
+    }
+    return;
+  }
+
   if (!taskDragState.isDragging) {
     if (Math.hypot(moveX, moveY) < TASK_DRAG_THRESHOLD) return;
     taskDragState.isDragging = true;
+    taskDragState.row.classList.remove('drag-ready');
     taskDragState.row.classList.add('dragging');
     taskDragState.container.classList.add('is-task-dragging');
   }
@@ -416,19 +451,19 @@ function handleTaskDragMove(event: PointerEvent) {
 
 function handleTaskDragEnd(event: PointerEvent) {
   if (!taskDragState || event.pointerId !== taskDragState.pointerId) return;
+  const hasLongPressed = taskDragState.hasLongPressed;
   const wasDragging = taskDragState.isDragging;
-  if (wasDragging) event.preventDefault();
+  if (hasLongPressed || wasDragging) {
+    event.preventDefault();
+  }
 
   const { orderedIds, sourceIndex, dropIndex } = taskDragState;
   const nextIds = buildMovedTaskIds(orderedIds, sourceIndex, dropIndex);
   const didChange = nextIds.some((id, index) => id !== orderedIds[index]);
   cleanupTaskDrag();
 
+  if (hasLongPressed) suppressNextTaskClick();
   if (!wasDragging) return;
-  suppressTaskClick = true;
-  window.setTimeout(() => {
-    suppressTaskClick = false;
-  }, 0);
 
   if (!didChange) return;
   applyVisibleTaskOrder(nextIds);
@@ -463,7 +498,9 @@ function startTaskDrag(event: PointerEvent, container: HTMLElement, taskId: stri
     orderedIds,
     startX: event.clientX,
     startY: event.clientY,
-    isDragging: false
+    hasLongPressed: false,
+    isDragging: false,
+    longPressTimer: window.setTimeout(() => activateTaskLongPressDrag(event.pointerId), TASK_DRAG_LONG_PRESS_MS)
   };
 
   row.setPointerCapture(event.pointerId);
@@ -525,6 +562,11 @@ function renderTasksList(container: HTMLElement, tasks: Task[]) {
     checkbox.addEventListener('change', (e) => toggleTask(task.id, (e.target as HTMLInputElement).checked));
     if (!task.done) {
       li.addEventListener('pointerdown', (e) => startTaskDrag(e, container, task.id, li));
+      li.addEventListener('contextmenu', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button, input, textarea, select, a')) return;
+        e.preventDefault();
+      });
     }
     const deleteBtn = li.querySelector('.btn-task-delete');
     if (!deleteBtn) return;
