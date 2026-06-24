@@ -1,6 +1,6 @@
 # Daily Canvas
 
-シンプルなデイリープランナーの Vite + TypeScript PWA です。`index.html`・`src/style.css`・`src/main.ts`を中心に、`public/manifest.webmanifest` と `public/sw.js` でインストールとオフライン起動に対応しています。
+シンプルなデイリープランナーの Vite + React + TypeScript PWA です。`index.html`・`src/App.tsx`・`src/main.tsx`・`src/style.css`を中心に、`public/manifest.webmanifest` と `public/sw.js` でインストールとオフライン起動に対応しています。
 
 ## ローカルでの確認
 
