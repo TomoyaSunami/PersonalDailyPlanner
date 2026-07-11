@@ -186,6 +186,33 @@ body {
   margin-bottom: 8px;
 }
 
+.date-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.today-btn {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 14px;
+  background: rgba(236, 254, 255, 0.82);
+  color: #0e7490;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(6, 182, 212, 0.1);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.today-btn:hover {
+  transform: translateY(-1px);
+  background: #ecfeff;
+  box-shadow: 0 14px 30px rgba(6, 182, 212, 0.16);
+}
+
 .calendar-trigger {
   display: inline-flex;
   align-items: center;
@@ -1127,7 +1154,8 @@ input[type="checkbox"]:focus-visible {
 .ghost-btn:focus-visible,
 .icon-btn:focus-visible,
 .calendar-cell:focus-visible,
-.day-chip:focus-visible {
+.day-chip:focus-visible,
+.today-btn:focus-visible {
   outline: 2px solid rgba(99, 102, 241, 0.6);
   outline-offset: 3px;
 }

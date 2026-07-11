@@ -333,21 +333,28 @@ function App() {
             <article className="glass-card section-card app-enter app-enter-delayed">
               <div className="section-head date-row">
                 <h2>{todayLabel === '今日' ? todayLabel : <DateText text={todayLabel} />}</h2>
-                <button
-                  className={`icon-btn calendar-trigger ${isCalendarOpen ? 'active' : ''}`}
-                  aria-label="日付を選択"
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (!isCalendarOpen) {
-                      const baseDate = new Date(selectedDate || toISO(today));
-                      setCalendarMonth(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
-                    }
-                    setIsCalendarOpen((open) => !open);
-                  }}
-                >
-                  <span className="icon-calendar-symbol" aria-hidden="true" />
-                </button>
+                <div className="date-actions">
+                  {selectedDate !== toISO(today) && (
+                    <button className="today-btn" type="button" onClick={() => selectDate(today)}>
+                      今日に戻る
+                    </button>
+                  )}
+                  <button
+                    className={`icon-btn calendar-trigger ${isCalendarOpen ? 'active' : ''}`}
+                    aria-label="日付を選択"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!isCalendarOpen) {
+                        const baseDate = new Date(selectedDate || toISO(today));
+                        setCalendarMonth(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
+                      }
+                      setIsCalendarOpen((open) => !open);
+                    }}
+                  >
+                    <span className="icon-calendar-symbol" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
 
               <CalendarPopover
